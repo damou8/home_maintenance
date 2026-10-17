@@ -38,12 +38,12 @@ python -m pip install -r requirements_test.txt
 python -m pytest -q
 ```
 
-### Panel and dashboard card
+### Dashboard card
 
-The sources are TypeScript in `custom_components/home_maintenance/panel/src`. The built bundles in `panel/dist` are committed because they ship in the release, so rebuild them with every source change:
+The card's sources are TypeScript in `custom_components/home_maintenance/frontend/src`. The built bundle in `frontend/dist` is committed because it ships in the release, so rebuild it with every source change:
 
 ```bash
-cd custom_components/home_maintenance/panel
+cd custom_components/home_maintenance/frontend
 npm ci
 npm run typecheck
 npm run build
