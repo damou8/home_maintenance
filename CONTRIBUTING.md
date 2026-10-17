@@ -1,61 +1,66 @@
 # Contribution guidelines
 
-Contributing to this project should be as easy and transparent as possible, whether it's:
+Contributions are welcome, whether it's:
 
 - Reporting a bug
 - Discussing the current state of the code
 - Submitting a fix
 - Proposing new features
 
-## Github is used for everything
+## GitHub is used for everything
 
-Github is used to host code, to track issues and feature requests, as well as accept pull requests.
-
-Pull requests are the best way to propose changes to the codebase.
+Issues track bugs and feature requests, and changes come in as pull requests:
 
 1. Fork the repo and create your branch from `main`.
-2. If you've changed something, update the documentation.
-3. Make sure your code lints (using `scripts/lint`).
-4. Test you contribution.
-5. Issue that pull request!
+2. Make your change, with a test when it changes behaviour.
+3. Update the documentation (`README.md`) if users will notice the change.
+4. Check that lint, tests and the frontend build pass (see below).
+5. Open the pull request.
 
-## Any contributions you make will be under the MIT Software License
+[`CLAUDE.md`](CLAUDE.md) describes the code layout, the conventions and the pitfalls to know about. It's worth a read before a first change.
 
-In short, when you submit code changes, your submissions are understood to be under the same [MIT License](http://choosealicense.com/licenses/mit/) that covers the project. Feel free to contact the maintainers if that's a concern.
+## Development setup
 
-## Report bugs using Github's [issues](../../issues)
+The repo includes a [dev container](.devcontainer.json) for VS Code with Python, Node and a Home Assistant instance ready to run. Without it:
 
-GitHub issues are used to track public bugs.
-Report a bug by [opening a new issue](../../issues/new/choose); it's that easy!
+```bash
+scripts/setup        # .venv with Home Assistant (minimum supported version) and ruff
+scripts/develop      # HA on http://localhost:8123 with this integration linked in, config in ./config
+```
 
-## Write bug reports with detail, background, and sample code
+### Python
 
-**Great Bug Reports** tend to have:
+```bash
+scripts/lint                                 # ruff format + ruff check --fix
+
+# In a separate venv: the tests pin their own Home Assistant version
+python -m pip install -r requirements_test.txt
+python -m pytest -q
+```
+
+### Panel and dashboard card
+
+The sources are TypeScript in `custom_components/home_maintenance/panel/src`. The built bundles in `panel/dist` are committed because they ship in the release, so rebuild them with every source change:
+
+```bash
+cd custom_components/home_maintenance/panel
+npm ci
+npm run typecheck
+npm run build
+```
+
+CI fails if `dist` doesn't match the sources.
+
+## Report bugs using GitHub's [issues](../../issues)
+
+Report a bug by [opening a new issue](../../issues/new/choose). Good bug reports have:
 
 - A quick summary and/or background
-- Steps to reproduce
-  - Be specific!
-  - Give sample code if you can.
+- Steps to reproduce, as specific as possible
 - What you expected would happen
 - What actually happens
-- Notes (possibly including why you think this might be happening, or stuff you tried that didn't work)
-
-People *love* thorough bug reports. I'm not even kidding.
-
-## Use a Consistent Coding Style
-
-Use [black](https://github.com/ambv/black) to make sure the code follows the style.
-
-## Test your code modification
-
-This custom component is based on [integration_blueprint template](https://github.com/ludeeus/integration_blueprint).
-
-It comes with development environment in a container, easy to launch
-if you use Visual Studio Code. With this container you will have a stand alone
-Home Assistant instance running and already configured with the included
-[`configuration.yaml`](./config/configuration.yaml)
-file.
+- Debug logs, and notes on what you think is happening or what you tried
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under its MIT License.
+By contributing, you agree that your contributions will be licensed under the project's [MIT License](LICENSE).
