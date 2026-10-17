@@ -104,3 +104,34 @@ async def test_tasks_from_older_versions_load(
     assert task["enabled"] is True
     assert task["notify_mode"] == "default"
     assert task["notify_targets"] == []
+
+
+async def test_reset_service_with_target(
+    hass: HomeAssistant, setup_integration, ws
+) -> None:
+    """reset_last_performed works with a single entity and with a target list."""
+    for title in ("Task A", "Task B"):
+        await ws(
+            type="home_maintenance/add_task",
+            title=title,
+            interval_value=7,
+            interval_type="days",
+            last_performed=days_ago(10),
+        )
+    await hass.async_block_till_done()
+    a = "binary_sensor.home_maintenance_task_a"
+    b = "binary_sensor.home_maintenance_task_b"
+    assert hass.states.get(a).state == "on"
+
+    await hass.services.async_call(
+        "home_maintenance", "reset_last_performed", {"entity_id": a}, blocking=True
+    )
+    await hass.services.async_call(
+        "home_maintenance",
+        "reset_last_performed",
+        target={"entity_id": [b]},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+    assert hass.states.get(a).state == "off"
+    assert hass.states.get(b).state == "off"

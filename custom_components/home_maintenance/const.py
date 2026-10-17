@@ -13,7 +13,7 @@ from homeassistant.helpers.selector import (
     TimeSelector,
 )
 
-VERSION = "1.6.0"
+VERSION = "1.7.0"
 NAME = "Home Maintenance"
 MANUFACTURER = "@TJPoorman"
 
@@ -25,6 +25,8 @@ PANEL_FILENAME = "panel/main.js"
 PANEL_URL = "home-maintenance"
 PANEL_API_PATH = "/home_maintenance_static"
 PANEL_API_URL = PANEL_API_PATH + "/main.js"
+# Dashboard card, loaded on every frontend page; versioned so updates bypass the cache
+CARD_URL = f"{PANEL_API_PATH}/home-maintenance-card.js?v={VERSION}"
 PANEL_TITLE = NAME
 PANEL_ICON = "mdi:hammer-wrench"
 PANEL_NAME = "home-maintenance-panel"
@@ -35,7 +37,8 @@ SERVICE_RESET = "reset_last_performed"
 SERVICE_SEND_NOTIFICATIONS = "send_notifications"
 SERVICE_RESET_SCHEMA = vol.Schema(
     {
-        vol.Required("entity_id"): cv.entity_id,
+        # One entity, or several when called with a target
+        vol.Required("entity_id"): cv.entity_ids,
         vol.Optional("performed_date"): cv.string,
     }
 )

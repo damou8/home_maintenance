@@ -9,6 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import (
+    CARD_URL,
     PANEL_API_PATH,
     PANEL_API_URL,
     PANEL_ICON,
@@ -32,6 +33,9 @@ async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
         )
         hass.data["home_maintenance_static_path_registered"] = True
 
+    # Makes custom:home-maintenance-card available without adding a resource
+    frontend.add_extra_js_url(hass, CARD_URL)
+
     admin_only = entry.options.get("admin_only", entry.data.get("admin_only", True))
     sidebar_title = entry.options.get(
         "sidebar_title", entry.data.get("sidebar_title", PANEL_TITLE)
@@ -53,4 +57,5 @@ async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
 def async_unregister_panel(hass: HomeAssistant) -> None:
     """Remove custom panel for Home Maintenenance."""
     frontend.async_remove_panel(hass, PANEL_URL)
+    frontend.remove_extra_js_url(hass, CARD_URL)
     _LOGGER.debug("Removing panel")

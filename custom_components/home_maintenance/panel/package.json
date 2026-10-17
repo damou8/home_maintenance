@@ -4,7 +4,7 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "build": "esbuild src/main.ts --bundle --outfile=dist/main.js --format=esm --target=es2020 --minify",
+    "build": "esbuild src/main.ts src/card/home-maintenance-card.ts --bundle --outdir=dist --entry-names=[name] --format=esm --target=es2020 --minify",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

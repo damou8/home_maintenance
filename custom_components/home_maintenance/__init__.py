@@ -138,7 +138,6 @@ def register_services(hass: HomeAssistant) -> None:
     """Register services used by home maintenance component."""
 
     async def async_srv_reset(call: ServiceCall) -> None:
-        entity_id = call.data["entity_id"]
         performed_date_str = call.data.get("performed_date")
 
         performed_date = None
@@ -151,14 +150,13 @@ def register_services(hass: HomeAssistant) -> None:
             performed_date = dt_util.as_local(combined_date)
 
         entity_registry = er.async_get(hass)
-        entry = cast("RegistryEntry", entity_registry.async_get(entity_id))
-        task_id = entry.unique_id
-        entity = hass.data[const.DOMAIN]["entities"].get(task_id)
-        if entity is None:
-            return
-
         store = hass.data[const.DOMAIN].get("store")
-        store.update_last_performed(task_id, performed_date)
+        for entity_id in call.data["entity_id"]:
+            entry = cast("RegistryEntry", entity_registry.async_get(entity_id))
+            task_id = entry.unique_id
+            if hass.data[const.DOMAIN]["entities"].get(task_id) is None:
+                continue
+            store.update_last_performed(task_id, performed_date)
 
     hass.services.async_register(
         const.DOMAIN,

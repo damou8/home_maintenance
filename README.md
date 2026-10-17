@@ -88,6 +88,27 @@ Messages are sent with `notify.send_message` in Home Assistant's language (Engli
 
 ---
 
+## 🃏 Dashboard card
+
+The integration ships a dashboard card, no extra resource to install. Edit a dashboard → **Add card** → **Home Maintenance**, or in YAML:
+
+```yaml
+type: custom:home-maintenance-card
+```
+
+Each task shows its icon, name and next due date with the share of the interval left. The icon is **red** (and pulses) when the task is due, **blue** when less than 15% of the interval is left, **green** otherwise. Due tasks come first, then by due date. Tapping a task marks it done after a confirmation; holding it opens its details.
+
+| Option | Default | Description |
+|---|---|---|
+| `title` | | Title above the tasks |
+| `show_disabled` | `false` | Also show disabled tasks (greyed out, at the end) |
+| `labels` | | Only show tasks with at least one of these label IDs |
+| `warning_threshold` | `15` | Below this % of the interval left, the icon turns blue |
+| `tap_action` | mark as done | Any [card action](https://www.home-assistant.io/dashboards/actions/); a `perform-action` without target applies to the tapped task |
+| `hold_action` | `more-info` | Same as `tap_action` |
+
+---
+
 ## 🔄 Example Tasks
 
 | Task                 | Interval | Last Done     |

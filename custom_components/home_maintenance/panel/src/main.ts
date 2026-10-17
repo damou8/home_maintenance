@@ -768,4 +768,6 @@ export class HomeMaintenancePanel extends LitElement {
     static styles = commonStyle;
 }
 
-customElements.define("home-maintenance-panel", HomeMaintenancePanel);
+if (!customElements.get("home-maintenance-panel")) {
+    customElements.define("home-maintenance-panel", HomeMaintenancePanel);
+}
