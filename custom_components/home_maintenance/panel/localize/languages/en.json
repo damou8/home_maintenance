@@ -1,7 +1,6 @@
 {
     "common": {
         "loading": "Loading...",
-        "none": "None",
         "no_tasks": "No tasks found."
     },
     "intervals": {
@@ -59,9 +58,6 @@
             },
             "current": {
                 "title": "Current Tasks",
-                "no_items": "No tasks found.",
-                "every": "every",
-                "last": "Last",
                 "next": "Next Due",
                 "actions": {
                     "complete": "Complete",

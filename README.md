@@ -4,6 +4,8 @@ Keep your home in top shape by tracking recurring maintenance tasks right inside
 
 This custom integration helps you remember important chores like changing air filters, cleaning gutters, or testing smoke alarms — and shows you when they're due.
 
+> This is a maintained fork of [TJPoorman/home_maintenance](https://github.com/TJPoorman/home_maintenance), updated for current Home Assistant releases. It requires **Home Assistant 2026.3** or newer.
+
 ---
 
 ## ✨ What It Does
@@ -12,6 +14,8 @@ This custom integration helps you remember important chores like changing air fi
 - 🔔 Creates entities in Home Assistant to be able to create automations and display on dashboards
 - ✅ Lets you mark tasks as completed so it can track the next due date
 - 📊 Shows tasks in a clean, easy-to-use interface built into Home Assistant
+- 📱 Notifies your phones when tasks are due
+- 🃏 Includes a dashboard card showing your tasks and how soon they're due
 
 ---
 
@@ -68,8 +72,11 @@ Download the <a href="https://github.com/damou8/home_maintenance/releases">lates
   - Select an icon (Optional)
   - Click **Add Task**
 - Tasks will show if they are due or overdue
-- Click **Complete** to reset the Last Performed date to today
+- Click the **✓** button to mark a task done: its Last Performed date becomes today
+- Use the **⋮** menu to **Edit** or **Remove** a task
 - Use the **⋮** menu → **Disable** to pause a task (its sensor stays `off` and it sends no notifications), and **Enable** to resume it
+
+The panel is available in English and German, the rest of the integration (settings, notifications, dashboard card) in English, French and German.
 
 ---
 
@@ -119,20 +126,21 @@ Each task shows its icon, name and next due date with the share of the interval 
 
 ---
 
-## 🔁 Available Services
+## 🔁 Available Actions
 
 ### `home_maintenance.reset_last_performed`
 
-Marks a specific task as completed and updates its `last_performed` and `next_due`.
+Marks one or more tasks as completed and updates their `last_performed` and `next_due`.
 
 Optionally specify a date for `last_performed`.
 
-#### Example service call:
+#### Example action:
 
 ```yaml
-service: home_maintenance.reset_last_performed
+action: home_maintenance.reset_last_performed
+target:
+  entity_id: binary_sensor.home_maintenance_clean_gutters
 data:
-  entity_id: binary_sensor.clean_gutters
   performed_date: "2025-06-19"
 ```
 
@@ -141,19 +149,25 @@ data:
 Sends the due-task notifications right away, the same way the daily check does. Handy to test your setup.
 
 ```yaml
-service: home_maintenance.send_notifications
+action: home_maintenance.send_notifications
 ```
 
 ---
 
 ## 💬 Need Help?
 
-Open an issue here on GitHub or ask in the Home Assistant community.
+[Open an issue](https://github.com/damou8/home_maintenance/issues) here on GitHub or ask in the Home Assistant community.
 
 [Home Assistant Community Thread](https://community.home-assistant.io/t/new-integration-home-maintenance-track-recurring-tasks-in-home-assistant/897324)
 
 ---
 
+## 🧑‍💻 Contributing
+
+Pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup, and [CLAUDE.md](CLAUDE.md) for the code layout and conventions.
+
+---
+
 ## 📄 License
 
-MIT License – free to use, share, and improve.
+MIT License – free to use, share, and improve. Originally created by [@TJPoorman](https://github.com/TJPoorman).

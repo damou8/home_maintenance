@@ -19,9 +19,6 @@ MANUFACTURER = "@TJPoorman"
 
 DOMAIN = "home_maintenance"
 
-CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
-
-PANEL_FILENAME = "panel/main.js"
 PANEL_URL = "home-maintenance"
 PANEL_API_PATH = "/home_maintenance_static"
 PANEL_API_URL = PANEL_API_PATH + "/main.js"

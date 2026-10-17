@@ -1,15 +1,18 @@
+import * as de from './languages/de.json';
 import * as en from './languages/en.json';
 
 import IntlMessageFormat from 'intl-messageformat';
 
-var languages: any = {
+// Keys missing in a language fall back to English
+const languages: Record<string, any> = {
+    de: de,
     en: en,
 };
 
 export function localize(string: string, language: string, ...args: any[]): string {
     const lang = language.replace(/['"]+/g, '');
 
-    var translated: string;
+    let translated: string;
 
     try {
         translated = string.split('.').reduce((o, i) => o[i], languages[lang]);

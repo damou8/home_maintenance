@@ -11,7 +11,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.util import dt as dt_util
 
 from . import const
-from .binary_sensor import compute_due_date
+from .binary_sensor import compute_next_due
 from .store import TaskStore
 
 _LOGGER = logging.getLogger(__name__)
@@ -127,10 +127,10 @@ class TaskNotifier:
             targets = self._targets_for(task)
             if not targets:
                 continue
-            due = compute_due_date(task)
+            due = compute_next_due(task)
             if due is None:
                 continue
-            message = self._message_for(task, (due - today).days)
+            message = self._message_for(task, (due.date() - today).days)
             if message is None:
                 continue
 

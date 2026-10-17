@@ -1,7 +1,7 @@
 """Support for Home Maintenance custom panel."""
 
 import logging
-import os
+from pathlib import Path
 
 from homeassistant.components import frontend, panel_custom
 from homeassistant.components.http import StaticPathConfig
@@ -24,7 +24,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Register custom panel for Home Maintenance."""
-    static_path = os.path.join(os.path.dirname(__file__), "panel", "dist")  # noqa: PTH118, PTH120
+    static_path = str(Path(__file__).parent / "panel" / "dist")
 
     # Register static path only once, since it cannot be removed on unload
     if not hass.data.setdefault("home_maintenance_static_path_registered", False):
@@ -55,7 +55,7 @@ async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 
 def async_unregister_panel(hass: HomeAssistant) -> None:
-    """Remove custom panel for Home Maintenenance."""
+    """Remove custom panel for Home Maintenance."""
     frontend.async_remove_panel(hass, PANEL_URL)
     frontend.remove_extra_js_url(hass, CARD_URL)
     _LOGGER.debug("Removing panel")

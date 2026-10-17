@@ -20,7 +20,7 @@ from .const import (
 
 
 class HomeMaintenanceConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Config flow for Home Maintenenance."""
+    """Config flow for Home Maintenance."""
 
     VERSION = "1.1.0"
 
@@ -56,7 +56,7 @@ class HomeMaintenanceConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class HomeMaintenanceOptionsFlowHandler(OptionsFlow):
-    """Options flow for Home Maintenenance."""
+    """Options flow for Home Maintenance."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None
