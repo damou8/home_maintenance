@@ -5,11 +5,13 @@ reset_last_performed:
   fields:
     entity_id:
       name: Entity ID
-      description: The ID of the task entity to reset.
+      description: The task entity (or entities) to reset.
       required: true
       selector:
         entity:
+          integration: home_maintenance
           domain: binary_sensor
+          multiple: true
     performed_date:
       name: Performed Date
       description: Optionally specify the date the task was last performed.

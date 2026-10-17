@@ -11,7 +11,6 @@ from homeassistant.core import Event, HomeAssistant, ServiceCall, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_registry import RegistryEntry  # noqa: TC002
-from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import dt as dt_util
 
 from . import const
@@ -24,13 +23,6 @@ from .store import TaskStore
 from .websocket import async_register_websockets
 
 _LOGGER = logging.getLogger(__name__)
-
-CONFIG_SCHEMA = const.CONFIG_SCHEMA
-
-
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:  # noqa: ARG001
-    """Track states and offer events for sensors."""
-    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -67,7 +59,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         manufacturer=const.MANUFACTURER,
     )
 
-    hass.data.setdefault(const.DOMAIN, {})
     hass.data[const.DOMAIN] = {
         "add_entities": None,
         "entry_id": entry.entry_id,
@@ -116,20 +107,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Handle reload of a config entry."""
-    await async_unload_entry(hass, entry)
-    await async_setup_entry(hass, entry)
-
-
-async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:  # noqa: ARG001
-    """Remove Home Maintenance config entry."""
-    async_unregister_panel(hass)
-    del hass.data[const.DOMAIN]
-
-
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  # noqa: ARG001
     """Handle migration of config entry."""
+    # Entries made by older releases need no change
     return True
 
 

@@ -28,6 +28,18 @@ TASK_UPDATES_SCHEMA = vol.Schema(
 )
 
 
+def _parse_last_performed(value: str | None) -> str | None:
+    """Return a date as local midnight ISO string: today if empty, None if invalid."""
+    if not value:
+        day = dt_util.now()
+    else:
+        parsed = dt_util.parse_datetime(value)
+        if parsed is None:
+            return None
+        day = dt_util.as_local(parsed)
+    return day.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+
+
 @callback
 def websocket_get_tasks(
     hass: HomeAssistant, connection: connection.ActiveConnection, msg: dict[str, Any]
@@ -57,21 +69,12 @@ def websocket_add_task(
     store = hass.data[DOMAIN].get("store")
 
     last_str = msg.get("last_performed")
-    if last_str:
-        parsed = dt_util.parse_datetime(last_str)
-        if parsed is None:
-            connection.send_error(
-                msg["id"], "invalid_date", f"Could not parse date: {last_str}"
-            )
-            return
-        parsed_local = dt_util.as_local(parsed)
-        last_performed = parsed_local.replace(
-            hour=0, minute=0, second=0, microsecond=0
-        ).isoformat()
-    else:
-        last_performed = (
-            dt_util.now().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    last_performed = _parse_last_performed(last_str)
+    if last_performed is None:
+        connection.send_error(
+            msg["id"], "invalid_date", f"Could not parse date: {last_str}"
         )
+        return
 
     new_task = HomeMaintenanceTask(
         id=f"home_maintenance_{uuid.uuid4().hex}",
@@ -103,23 +106,12 @@ def websocket_update_task(
     # Partial updates (e.g. only "enabled") leave last_performed untouched
     if "last_performed" in updates:
         last_str = updates["last_performed"]
-        if last_str:
-            parsed = dt_util.parse_datetime(last_str)
-            if parsed is None:
-                connection.send_error(
-                    msg["id"], "invalid_date", f"Could not parse date: {last_str}"
-                )
-                return
-            parsed_local = dt_util.as_local(parsed)
-            last_performed = parsed_local.replace(
-                hour=0, minute=0, second=0, microsecond=0
-            ).isoformat()
-        else:
-            last_performed = (
-                dt_util.now()
-                .replace(hour=0, minute=0, second=0, microsecond=0)
-                .isoformat()
+        last_performed = _parse_last_performed(last_str)
+        if last_performed is None:
+            connection.send_error(
+                msg["id"], "invalid_date", f"Could not parse date: {last_str}"
             )
+            return
         updates["last_performed"] = last_performed
 
     store.update_task(task_id, updates)
@@ -157,7 +149,7 @@ def websocket_get_config(
 
     if not entries:
         connection.send_error(
-            msg["id"], "not_found", "No config entry found for your_domain"
+            msg["id"], "not_found", "No Home Maintenance config entry found"
         )
         return
 

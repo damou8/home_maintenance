@@ -96,10 +96,6 @@ class TaskStore:
             if t.tag_id and tag_uuids.get(t.tag_id) == tag_uuid
         ]
 
-    def get_by_tag_id(self, tag_id: str) -> list[dict]:
-        """Get tasks by tag id."""
-        return [attr.asdict(t) for t in self._tasks.values() if t.tag_id == tag_id]
-
     def add(
         self, task: HomeMaintenanceTask, labels: list[str] | None = None
     ) -> str | None:
@@ -108,13 +104,11 @@ class TaskStore:
         if not add_entities:
             msg = "add_entities not registered yet."
             raise RuntimeError(msg)
-            return None
 
         device_id = self.hass.data[const.DOMAIN].get("device_id")
         if not device_id:
             msg = "Device ID not available."
             raise RuntimeError(msg)
-            return None
 
         entity = HomeMaintenanceSensor(
             self.hass, attr.asdict(task), device_id, labels=labels
@@ -142,7 +136,6 @@ class TaskStore:
         if entity_entry is None:
             msg = f"No entity found with task ID {task_id}."
             raise RuntimeError(msg)
-            return
 
         # Remove the entity by entity_id
         er.async_remove(entity_entry.entity_id)
