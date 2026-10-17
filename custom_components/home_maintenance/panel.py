@@ -15,6 +15,7 @@ from .const import (
     PANEL_NAME,
     PANEL_TITLE,
     PANEL_URL,
+    VERSION,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -40,7 +41,8 @@ async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
         hass,
         webcomponent_name=PANEL_NAME,
         frontend_url_path=PANEL_URL,
-        module_url=PANEL_API_URL,
+        # Version in the URL so browsers fetch the new panel after an update
+        module_url=f"{PANEL_API_URL}?v={VERSION}",
         sidebar_title=sidebar_title,
         sidebar_icon=PANEL_ICON,
         require_admin=admin_only,
