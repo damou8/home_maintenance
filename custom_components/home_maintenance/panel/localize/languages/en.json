@@ -38,6 +38,12 @@
                     },
                     "label": {
                         "heading": "Label(s)"
+                    },
+                    "notify_mode": {
+                        "heading": "Notifications"
+                    },
+                    "notify_targets": {
+                        "heading": "Notify"
                     }
                 },
                 "sections": {
@@ -60,9 +66,12 @@
                 "actions": {
                     "complete": "Complete",
                     "edit": "Edit",
-                    "remove": "Remove"
+                    "remove": "Remove",
+                    "disable": "Disable",
+                    "enable": "Enable"
                 },
-                "confirm_remove": "Are you sure you want to remove this task?"
+                "confirm_remove": "Are you sure you want to remove this task?",
+                "disabled": "Disabled"
             }
         },
         "dialog": {
@@ -87,6 +96,12 @@
                     },
                     "label": {
                         "heading": "Label(s)"
+                    },
+                    "notify_mode": {
+                        "heading": "Notifications"
+                    },
+                    "notify_targets": {
+                        "heading": "Notify"
                     }
                 },
                 "sections": {
@@ -97,6 +112,15 @@
                     "save": "Save"
                 }
             }
+        },
+        "notify": {
+            "default_targets": "Default targets: {targets}",
+            "no_default_targets": "No default targets yet: set them in Settings → Devices & services → Home Maintenance → Configure"
         }
+    },
+    "notify_modes": {
+        "default": "Default targets",
+        "custom": "Custom targets",
+        "none": "No notifications"
     }
 }

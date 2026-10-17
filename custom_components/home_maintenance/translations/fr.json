@@ -1,0 +1,36 @@
+{
+  "config": {
+    "flow_title": "Home Maintenance",
+    "step": {
+      "user": {
+        "title": "Configurer Home Maintenance",
+        "description": "Configurer l'intégration Home Maintenance.",
+        "data": {
+          "admin_only": "Réserver le panneau aux administrateurs",
+          "sidebar_title": "Le nom affiché dans la barre latérale pour cette intégration."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Une seule instance de Home Maintenance est autorisée."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "admin_only": "Réserver le panneau aux administrateurs",
+          "sidebar_title": "Le nom affiché dans la barre latérale pour cette intégration.",
+          "notify_targets": "Notifier",
+          "notify_time": "Heure de notification",
+          "notify_days_before": "Rappel (jours avant l'échéance)",
+          "notify_overdue": "Répéter chaque jour tant que la tâche est en retard"
+        },
+        "data_description": {
+          "notify_targets": "Destinataires des notifications par défaut (ex. vos téléphones). Chaque tâche peut le remplacer.",
+          "notify_days_before": "0 désactive le rappel. Une notification est toujours envoyée le jour de l'échéance."
+        }
+      }
+    }
+  }
+}

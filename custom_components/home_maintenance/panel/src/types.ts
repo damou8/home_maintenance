@@ -4,6 +4,10 @@ export type IntervalType = "days" | "weeks" | "months";
 
 export const INTERVAL_TYPES: IntervalType[] = ["days", "weeks", "months"];
 
+export type NotifyMode = "default" | "custom" | "none";
+
+export const NOTIFY_MODES: NotifyMode[] = ["default", "custom", "none"];
+
 export function getIntervalTypeLabels(lang: string): Record<IntervalType, string> {
     return {
         days: localize("intervals.days", lang),
@@ -49,4 +53,7 @@ export interface Task {
     last_performed: string;
     tag_id?: string;
     icon?: string;
+    enabled?: boolean;
+    notify_mode?: NotifyMode;
+    notify_targets?: string[];
 }

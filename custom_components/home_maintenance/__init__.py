@@ -15,6 +15,7 @@ from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import dt as dt_util
 
 from . import const
+from .notifications import TaskNotifier
 from .panel import (
     async_register_panel,
     async_unregister_panel,
@@ -90,6 +91,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unsub = hass.bus.async_listen(EVENT_TAG_SCANNED, handle_tag_scanned_event)
     hass.data[const.DOMAIN]["unsub_tag_scanned"] = unsub
 
+    # Daily notifications for due tasks
+    notifier = TaskNotifier(hass, entry, task_store)
+    hass.data[const.DOMAIN]["notifier"] = notifier
+    hass.data[const.DOMAIN]["unsub_notifier"] = notifier.async_start()
+
     return True
 
 
@@ -101,6 +107,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if "unsub_tag_scanned" in hass.data[const.DOMAIN]:
         hass.data[const.DOMAIN]["unsub_tag_scanned"]()
+
+    if "unsub_notifier" in hass.data[const.DOMAIN]:
+        hass.data[const.DOMAIN]["unsub_notifier"]()
 
     async_unregister_panel(hass)
     hass.data.pop(const.DOMAIN, None)
@@ -156,4 +165,13 @@ def register_services(hass: HomeAssistant) -> None:
         const.SERVICE_RESET,
         async_srv_reset,
         schema=const.SERVICE_RESET_SCHEMA,
+    )
+
+    async def async_srv_send_notifications(call: ServiceCall) -> None:  # noqa: ARG001
+        await hass.data[const.DOMAIN]["notifier"].async_send_notifications()
+
+    hass.services.async_register(
+        const.DOMAIN,
+        const.SERVICE_SEND_NOTIFICATIONS,
+        async_srv_send_notifications,
     )

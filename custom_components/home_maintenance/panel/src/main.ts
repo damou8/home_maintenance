@@ -10,7 +10,7 @@ import { localize } from '../localize/localize';
 import { VERSION } from "./const";
 import { loadConfigDashboard } from "./helpers";
 import { commonStyle } from './styles'
-import { EntityRegistryEntry, IntegrationConfig, IntervalType, INTERVAL_TYPES, getIntervalTypeLabels, Label, Task, Tag } from './types';
+import { EntityRegistryEntry, IntegrationConfig, IntervalType, INTERVAL_TYPES, getIntervalTypeLabels, Label, NOTIFY_MODES, NotifyMode, Task, Tag } from './types';
 import { completeTask, getConfig, loadLabelRegistry, loadRegistryEntries, loadTags, loadTask, loadTasks, removeTask, saveTask, updateTask } from './data/websockets';
 import './components/hm-task-menu'
 
@@ -22,7 +22,24 @@ interface TaskFormData {
     icon: string;
     label: string[];
     tag: string;
+    notify_mode: NotifyMode;
+    notify_targets: string[];
 }
+
+// Table cells render inside ha-data-table's shadow root, so they are styled inline
+const STATUS_ICON_STYLE = "--mdc-icon-size: 18px; color: var(--secondary-text-color); margin-left: 4px;";
+
+const emptyFormData = (): TaskFormData => ({
+    title: "",
+    interval_value: "",
+    interval_type: "days",
+    last_performed: "",
+    icon: "",
+    label: [],
+    tag: "",
+    notify_mode: "default",
+    notify_targets: [],
+});
 
 export class HomeMaintenancePanel extends LitElement {
     @property() hass?: HomeAssistant;
@@ -35,28 +52,12 @@ export class HomeMaintenancePanel extends LitElement {
     @state() private labelRegistry: Label[] = [];
 
     // New Task form state
-    @state() private _formData: TaskFormData = {
-        title: "",
-        interval_value: "",
-        interval_type: "days",
-        last_performed: "",
-        icon: "",
-        label: [],
-        tag: "",
-    };
+    @state() private _formData: TaskFormData = emptyFormData();
     private _advancedOpen: boolean = false;
 
     // Edit dialog state
     @state() private _editingTaskId: string | null = null;
-    @state() private _editFormData: TaskFormData = {
-        title: "",
-        interval_value: "",
-        interval_type: "days",
-        last_performed: "",
-        icon: "",
-        label: [],
-        tag: "",
-    };
+    @state() private _editFormData: TaskFormData = emptyFormData();
 
     private get _columns() {
         return {
@@ -66,8 +67,8 @@ export class HomeMaintenancePanel extends LitElement {
                 showNarrow: false,
                 label: "icon",
                 type: "icon",
-                template: (task: Task) =>
-                    task.icon ? html`<ha-icon .icon=${task.icon}></ha-icon>` : nothing,
+                template: (task: any) =>
+                    task.icon ? html`<ha-icon style=${task.enabled ? "" : "opacity: 0.4;"} .icon=${task.icon}></ha-icon>` : nothing,
             },
             tagIcon: {
                 title: "",
@@ -85,15 +86,25 @@ export class HomeMaintenancePanel extends LitElement {
                 sortable: true,
                 filterable: true,
                 grows: true,
-                extraTemplate: (task: Task) => {
+                extraTemplate: (task: any) => {
                     const entity = this.registry.find((entry) => entry.unique_id === task.id);
-                    if (!entity) return nothing;
+                    const labels = entity
+                        ? this.labelRegistry.filter((lr) => entity.labels.includes(lr.label_id))
+                        : [];
 
-                    const labels = this.labelRegistry.filter((lr) => entity.labels.includes(lr.label_id));
-
-                    return labels.length
-                        ? html`<ha-data-table-labels .labels=${labels}></ha-data-table-labels>`
-                        : nothing;
+                    return html`
+                        ${!task.enabled
+                            ? html`<ha-icon style=${STATUS_ICON_STYLE} icon="mdi:pause-circle-outline"
+                                title=${localize('panel.cards.current.disabled', this.hass!.language)}></ha-icon>`
+                            : nothing}
+                        ${task.enabled && task.notify_mode === "none"
+                            ? html`<ha-icon style=${STATUS_ICON_STYLE} icon="mdi:bell-off-outline"
+                                title=${localize('notify_modes.none', this.hass!.language)}></ha-icon>`
+                            : nothing}
+                        ${labels.length
+                            ? html`<ha-data-table-labels .labels=${labels}></ha-data-table-labels>`
+                            : nothing}
+                    `;
                 },
             },
             interval_days: {
@@ -133,9 +144,12 @@ export class HomeMaintenancePanel extends LitElement {
                     const now = new Date();
                     const next = new Date(task.next_due);
                     const isDue = next <= now;
+                    const style = !task.enabled
+                        ? "opacity: 0.5;"
+                        : isDue ? "color: var(--error-color, red); font-weight: bold;" : "";
 
                     return html`
-                        <span style=${isDue ? "color: var(--error-color, red); font-weight: bold;" : ""}>
+                        <span style=${style}>
                             ${formatDateNumeric(next, this.hass!.locale)}
                         </span>` || "—";
                 },
@@ -165,7 +179,7 @@ export class HomeMaintenancePanel extends LitElement {
                 moveable: false,
                 hideable: false,
                 type: "overflow-menu",
-                template: (task: Task) => html`
+                template: (task: any) => html`
                     <hm-task-menu
                         .hass=${this.hass}
                         .items=${[
@@ -174,6 +188,17 @@ export class HomeMaintenancePanel extends LitElement {
                             label: localize('panel.cards.current.actions.edit', this.hass!.language),
                             icon: 'mdi:pencil'
                         },
+                        task.enabled
+                            ? {
+                                value: 'disable',
+                                label: localize('panel.cards.current.actions.disable', this.hass!.language),
+                                icon: 'mdi:pause-circle-outline'
+                            }
+                            : {
+                                value: 'enable',
+                                label: localize('panel.cards.current.actions.enable', this.hass!.language),
+                                icon: 'mdi:play-circle-outline'
+                            },
                         {
                             value: 'delete',
                             label: localize('panel.cards.current.actions.remove', this.hass!.language),
@@ -254,6 +279,8 @@ export class HomeMaintenancePanel extends LitElement {
                 return next;
             })(),
             tagIcon: (() => task.tag_id && task.tag_id.trim() !== "" ? "mdi:tag" : undefined)(),
+            enabled: task.enabled !== false,
+            notify_mode: task.notify_mode ?? "default",
         }));
     }
 
@@ -283,8 +310,43 @@ export class HomeMaintenancePanel extends LitElement {
             { name: "icon", selector: { icon: {} }, },
             { name: "label", selector: { label: { multiple: true } }, },
             { name: "tag", selector: { entity: { filter: { domain: "tag" } } }, },
+            ...this._notifySchema(this._formData),
         ]
     };
+
+    // Targets are only asked for when the task overrides the default ones
+    private _notifySchema(data: TaskFormData) {
+        return [
+            {
+                name: "notify_mode",
+                required: true,
+                selector: {
+                    select: {
+                        options: NOTIFY_MODES.map((mode) => ({
+                            value: mode,
+                            label: localize(`notify_modes.${mode}`, this.hass!.language),
+                        })),
+                        mode: "dropdown",
+                    },
+                },
+            },
+            ...(data.notify_mode === "custom"
+                ? [{ name: "notify_targets", selector: { entity: { filter: { domain: "notify" }, multiple: true } } }]
+                : []),
+        ];
+    }
+
+    // Helper under the notification field: who gets notified by default
+    private get _defaultTargetsHelper(): string {
+        const targets: string[] = this.config?.options.notify_targets ?? [];
+        if (!targets.length) {
+            return localize('panel.notify.no_default_targets', this.hass!.language);
+        }
+        const names = targets
+            .map((id) => this.hass!.states[id]?.attributes.friendly_name ?? id)
+            .join(", ");
+        return localize('panel.notify.default_targets', this.hass!.language, '{targets}', names);
+    }
 
     private get _editSchema() {
         return [
@@ -307,6 +369,7 @@ export class HomeMaintenancePanel extends LitElement {
             { name: "icon", selector: { icon: {} }, },
             { name: "label", selector: { label: { multiple: true } }, },
             { name: "tag", selector: { entity: { filter: { domain: "tag" } } }, },
+            ...this._notifySchema(this._editFormData),
         ]
     };
 
@@ -319,6 +382,9 @@ export class HomeMaintenancePanel extends LitElement {
     }
 
     private _computeHelper = (schema: { name: string }): string => {
+        if (schema.name === "notify_mode") {
+            return this._formData.notify_mode === "default" ? this._defaultTargetsHelper : "";
+        }
         try {
             return localize(`panel.cards.new.fields.${schema.name}.helper`, this.hass!.language) ?? "";
         } catch {
@@ -335,6 +401,9 @@ export class HomeMaintenancePanel extends LitElement {
     }
 
     private _computeEditHelper = (schema: { name: string }): string => {
+        if (schema.name === "notify_mode") {
+            return this._editFormData.notify_mode === "default" ? this._defaultTargetsHelper : "";
+        }
         try {
             return localize(`panel.dialog.edit_task.fields.${schema.name}.helper`, this.hass!.language) ?? "";
         } catch {
@@ -363,29 +432,13 @@ export class HomeMaintenancePanel extends LitElement {
     }
 
     private async resetForm() {
-        this._formData = {
-            title: "",
-            interval_value: "",
-            interval_type: "days",
-            last_performed: "",
-            icon: "",
-            label: [],
-            tag: "",
-        };
+        this._formData = emptyFormData();
 
         await this.loadData();
     }
 
     private async resetEditForm() {
-        this._editFormData = {
-            title: "",
-            interval_value: "",
-            interval_type: "days",
-            last_performed: "",
-            icon: "",
-            label: [],
-            tag: "",
-        };
+        this._editFormData = emptyFormData();
     }
 
     private computeISODate(dateStr: string): string {
@@ -558,7 +611,7 @@ export class HomeMaintenancePanel extends LitElement {
     }
 
     private async _handleAddTaskClick() {
-        const { title, interval_value, interval_type, last_performed, tag, icon, label } = this._formData;
+        const { title, interval_value, interval_type, last_performed, tag, icon, label, notify_mode, notify_targets } = this._formData;
 
         if (!title?.trim() || !interval_value || !interval_type) {
             const msg = localize("panel.cards.new.alerts.required", this.hass!.language);
@@ -574,6 +627,8 @@ export class HomeMaintenancePanel extends LitElement {
             tag_id: tag?.trim() || undefined,
             icon: icon?.trim() || "mdi:calendar-check",
             labels: label ?? [],
+            notify_mode,
+            notify_targets: notify_mode === "custom" ? notify_targets ?? [] : [],
         };
 
         try {
@@ -612,6 +667,8 @@ export class HomeMaintenancePanel extends LitElement {
                 icon: task.icon ?? "",
                 label: labels.map((l) => l.label_id),
                 tag: task.tag_id ?? "",
+                notify_mode: task.notify_mode ?? "default",
+                notify_targets: task.notify_targets ?? [],
             };
 
             await this.updateComplete;
@@ -633,6 +690,8 @@ export class HomeMaintenancePanel extends LitElement {
             last_performed: lastPerformedISO,
             icon: this._editFormData.icon?.trim() || "mdi:calendar-check",
             labels: this._editFormData.label,
+            notify_mode: this._editFormData.notify_mode,
+            notify_targets: this._editFormData.notify_mode === "custom" ? this._editFormData.notify_targets ?? [] : [],
         };
 
         if (this._editFormData.tag && this._editFormData.tag.trim() !== "") {
@@ -679,9 +738,22 @@ export class HomeMaintenancePanel extends LitElement {
             case 'edit':
                 this._handleOpenEditDialogClick(taskId);
                 break;
+            case 'disable':
+            case 'enable':
+                this._handleSetEnabledClick(taskId, action === 'enable');
+                break;
             case 'delete':
                 this._handleRemoveTaskClick(taskId);
                 break;
+        }
+    }
+
+    private async _handleSetEnabledClick(id: string, enabled: boolean) {
+        try {
+            await updateTask(this.hass!, { task_id: id, updates: { enabled } });
+            await this.loadData();
+        } catch (e) {
+            console.error("Failed to change task state:", e);
         }
     }
 

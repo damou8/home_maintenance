@@ -69,6 +69,22 @@ Download the <a href="https://github.com/damou8/home_maintenance/releases">lates
   - Click **Add Task**
 - Tasks will show if they are due or overdue
 - Click **Complete** to reset the Last Performed date to today
+- Use the **⋮** menu → **Disable** to pause a task (its sensor stays `off` and it sends no notifications), and **Enable** to resume it
+
+---
+
+## 🔔 Notifications
+
+Home Maintenance can notify your phones when tasks are due, no automation needed.
+
+1. Go to **Settings → Devices & services → Home Maintenance → Configure**.
+2. Pick the default **notify** entities (e.g. your phones from the Companion app), the notification time, how many days before the due date to send a reminder (`0` = no reminder), and whether to repeat the notification every day while a task is overdue.
+3. Each task has a **Notifications** setting (under *Optional settings*, or in the edit dialog):
+   - **Default targets**: use the entities chosen in step 2
+   - **Custom targets**: notify other entities for this task only
+   - **No notifications**: never notify for this task
+
+Messages are sent with `notify.send_message` in Home Assistant's language (English, French and German included).
 
 ---
 
@@ -97,6 +113,14 @@ service: home_maintenance.reset_last_performed
 data:
   entity_id: binary_sensor.clean_gutters
   performed_date: "2025-06-19"
+```
+
+### `home_maintenance.send_notifications`
+
+Sends the due-task notifications right away, the same way the daily check does. Handy to test your setup.
+
+```yaml
+service: home_maintenance.send_notifications
 ```
 
 ---

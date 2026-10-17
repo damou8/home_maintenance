@@ -1,7 +1,7 @@
 """Support for Home Maintenance binary sensors."""
 
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from dateutil.relativedelta import relativedelta
 from homeassistant.components.binary_sensor import BinarySensorEntity
@@ -15,6 +15,27 @@ from homeassistant.util import dt as dt_util
 from . import const
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def compute_due_date(task: dict) -> date | None:
+    """Return the date a task is next due, or None if it cannot be computed."""
+    last = dt_util.parse_datetime(task["last_performed"])
+    if last is None:
+        return None
+    if last.tzinfo is None:
+        last = dt_util.as_utc(last)
+
+    interval_value = task["interval_value"]
+    interval_type = task["interval_type"]
+    if interval_type == "days":
+        due = last + timedelta(days=interval_value)
+    elif interval_type == "weeks":
+        due = last + timedelta(weeks=interval_value)
+    elif interval_type == "months":
+        due = last + relativedelta(months=interval_value)
+    else:
+        due = last
+    return due.date()
 
 
 async def async_setup_entry(
@@ -91,12 +112,13 @@ class HomeMaintenanceSensor(BinarySensorEntity):
         """Get the latest state of the sensor."""
         last = dt_util.parse_datetime(self.task["last_performed"])
         if last is None:
-            self._attr_is_on = True
+            self._attr_is_on = self.task.get("enabled", True)
             self._attr_extra_state_attributes = {
                 "last_performed": self.task["last_performed"],
                 "interval_value": self.task["interval_value"],
                 "interval_type": self.task["interval_type"],
                 "next_due": "unknown",
+                "enabled": self.task.get("enabled", True),
             }
             if self.task["tag_id"]:
                 self._attr_extra_state_attributes["tag_id"] = self.task["tag_id"]
@@ -111,7 +133,8 @@ class HomeMaintenanceSensor(BinarySensorEntity):
             last, interval_value, interval_type
         ).replace(hour=0, minute=0, second=0, microsecond=0)
 
-        self._attr_is_on = (
+        # A disabled task is never reported as due
+        self._attr_is_on = self.task.get("enabled", True) and (
             dt_util.now().replace(hour=0, minute=0, second=0, microsecond=0) >= due_date
         )
         self._attr_extra_state_attributes = {
@@ -119,6 +142,7 @@ class HomeMaintenanceSensor(BinarySensorEntity):
             "interval_value": self.task["interval_value"],
             "interval_type": self.task["interval_type"],
             "next_due": due_date.isoformat(),
+            "enabled": self.task.get("enabled", True),
         }
         if self.task["tag_id"]:
             self._attr_extra_state_attributes["tag_id"] = self.task["tag_id"]

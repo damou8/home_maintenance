@@ -20,7 +20,15 @@
       "init": {
         "data": {
           "admin_only": "Panel nur für Administratoren anzeigen",
-          "sidebar_title": "Der Name, der in der Seitenleiste für diese Integration angezeigt wird."
+          "sidebar_title": "Der Name, der in der Seitenleiste für diese Integration angezeigt wird.",
+          "notify_targets": "Benachrichtigen",
+          "notify_time": "Uhrzeit der Benachrichtigung",
+          "notify_days_before": "Erinnerung (Tage vor Fälligkeit)",
+          "notify_overdue": "Täglich wiederholen, solange überfällig"
+        },
+        "data_description": {
+          "notify_targets": "Standard-Benachrichtigungsziele (z. B. deine Handys). Eine Aufgabe kann dies überschreiben.",
+          "notify_days_before": "0 deaktiviert die Erinnerung. Am Fälligkeitstag wird immer benachrichtigt."
         }
       }
     }

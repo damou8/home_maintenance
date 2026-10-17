@@ -29,6 +29,9 @@ class HomeMaintenanceTask:
     last_performed: str = attr.ib()
     tag_id: str | None = attr.ib(default=None)
     icon: str | None = attr.ib(default=None)
+    enabled: bool = attr.ib(default=True)
+    notify_mode: str = attr.ib(default=const.NOTIFY_MODE_DEFAULT)
+    notify_targets: list[str] = attr.ib(factory=list)
 
 
 class TaskStore:

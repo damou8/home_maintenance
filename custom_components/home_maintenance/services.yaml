@@ -17,3 +17,7 @@ reset_last_performed:
       example: "2025-06-01"
       selector:
         date:
+send_notifications:
+  name: Send Notifications
+  description: >
+    Sends the notifications for due tasks now, the same way the daily check does.

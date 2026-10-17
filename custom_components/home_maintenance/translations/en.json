@@ -20,7 +20,15 @@
       "init": {
         "data": {
           "admin_only": "Restrict panel to admins only",
-          "sidebar_title": "The name shown in the sidebar for this integration."
+          "sidebar_title": "The name shown in the sidebar for this integration.",
+          "notify_targets": "Notify",
+          "notify_time": "Notification time",
+          "notify_days_before": "Reminder (days before due date)",
+          "notify_overdue": "Repeat daily while overdue"
+        },
+        "data_description": {
+          "notify_targets": "Default notification targets (e.g. your phones). A task can override this.",
+          "notify_days_before": "0 disables the reminder. A notification is always sent on the due date."
         }
       }
     }

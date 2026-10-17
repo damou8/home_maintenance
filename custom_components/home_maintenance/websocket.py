@@ -9,8 +9,23 @@ from homeassistant.components.websocket_api import connection, messages
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN
+from .const import DOMAIN, NOTIFY_MODE_DEFAULT, NOTIFY_MODES
 from .store import HomeMaintenanceTask
+
+TASK_UPDATES_SCHEMA = vol.Schema(
+    {
+        vol.Optional("title"): str,
+        vol.Optional("interval_value"): vol.Coerce(int),
+        vol.Optional("interval_type"): str,
+        vol.Optional("last_performed"): vol.Any(str, None),
+        vol.Optional("tag_id"): vol.Any(str, None),
+        vol.Optional("icon"): vol.Any(str, None),
+        vol.Optional("labels"): [str],
+        vol.Optional("enabled"): bool,
+        vol.Optional("notify_mode"): vol.In(NOTIFY_MODES),
+        vol.Optional("notify_targets"): [str],
+    }
+)
 
 
 @callback
@@ -41,7 +56,7 @@ def websocket_add_task(
     """Add a new task."""
     store = hass.data[DOMAIN].get("store")
 
-    last_str = msg["last_performed"]
+    last_str = msg.get("last_performed")
     if last_str:
         parsed = dt_util.parse_datetime(last_str)
         if parsed is None:
@@ -66,6 +81,9 @@ def websocket_add_task(
         last_performed=last_performed,
         tag_id=msg.get("tag_id"),
         icon=msg.get("icon"),
+        enabled=msg.get("enabled", True),
+        notify_mode=msg.get("notify_mode", NOTIFY_MODE_DEFAULT),
+        notify_targets=msg.get("notify_targets", []),
     )
 
     labels = msg.get("labels", [])
@@ -82,23 +100,27 @@ def websocket_update_task(
     task_id = msg["task_id"]
     updates = msg.get("updates", {})
 
-    last_str = updates["last_performed"]
-    if last_str:
-        parsed = dt_util.parse_datetime(last_str)
-        if parsed is None:
-            connection.send_error(
-                msg["id"], "invalid_date", f"Could not parse date: {last_str}"
+    # Partial updates (e.g. only "enabled") leave last_performed untouched
+    if "last_performed" in updates:
+        last_str = updates["last_performed"]
+        if last_str:
+            parsed = dt_util.parse_datetime(last_str)
+            if parsed is None:
+                connection.send_error(
+                    msg["id"], "invalid_date", f"Could not parse date: {last_str}"
+                )
+                return
+            parsed_local = dt_util.as_local(parsed)
+            last_performed = parsed_local.replace(
+                hour=0, minute=0, second=0, microsecond=0
+            ).isoformat()
+        else:
+            last_performed = (
+                dt_util.now()
+                .replace(hour=0, minute=0, second=0, microsecond=0)
+                .isoformat()
             )
-            return
-        parsed_local = dt_util.as_local(parsed)
-        last_performed = parsed_local.replace(
-            hour=0, minute=0, second=0, microsecond=0
-        ).isoformat()
-    else:
-        last_performed = (
-            dt_util.now().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
-        )
-    updates["last_performed"] = last_performed
+        updates["last_performed"] = last_performed
 
     store.update_task(task_id, updates)
     connection.send_result(msg["id"], {"success": True})
@@ -187,6 +209,9 @@ async def async_register_websockets(hass: HomeAssistant) -> None:
                 vol.Optional("tag_id"): str,
                 vol.Optional("icon"): str,
                 vol.Optional("labels"): [str],
+                vol.Optional("enabled"): bool,
+                vol.Optional("notify_mode"): vol.In(NOTIFY_MODES),
+                vol.Optional("notify_targets"): [str],
             }
         ),
     )
@@ -199,7 +224,7 @@ async def async_register_websockets(hass: HomeAssistant) -> None:
             {
                 vol.Required("type"): "home_maintenance/update_task",
                 vol.Required("task_id"): str,
-                vol.Required("updates"): dict,
+                vol.Required("updates"): TASK_UPDATES_SCHEMA,
             }
         ),
     )
