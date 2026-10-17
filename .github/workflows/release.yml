@@ -4,29 +4,44 @@ on:
   release:
     types: [published]
 
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
+  tests:
+    name: Tests
+    uses: ./.github/workflows/tests.yml
+
+  frontend:
+    name: Frontend
+    uses: ./.github/workflows/frontend.yml
+
   build:
+    name: Build and attach the zip
+    needs: [tests, frontend]
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout the repository
+        uses: actions/checkout@v7
 
-      - name: Get version
-        id: version
-        uses: home-assistant/actions/helpers/version@master
+      # The device version and the panel's cache-busting URL come from VERSION
+      - name: Check that the tag matches the integration version
+        run: |
+          version=$(sed -n 's/^VERSION = "\(.*\)"$/\1/p' custom_components/home_maintenance/const.py)
+          if [ "v${version}" != "${GITHUB_REF_NAME}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match VERSION ${version} in const.py"
+            exit 1
+          fi
 
       - name: Patch manifest and zip
         run: |
-          sed -i 's/v0.0.0/${{ steps.version.outputs.version }}/' custom_components/home_maintenance/manifest.json
-
+          sed -i "s/v0.0.0/${GITHUB_REF_NAME}/" custom_components/home_maintenance/manifest.json
           cd custom_components/home_maintenance/
           zip ../../home_maintenance.zip ./* translations/* panel/dist/* -x '.*'
-      - name: Upload ZIP to Release
-        uses: softprops/action-gh-release@v2
+
+      - name: Attach the zip to the release
+        uses: softprops/action-gh-release@v3
         with:
           files: home_maintenance.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_unmatched_files: true

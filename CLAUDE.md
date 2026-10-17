@@ -46,7 +46,8 @@ scripts/setup && scripts/develop
 
 ## Good practices
 
-- **Keep CI green.** The Lint, Tests, Frontend and Validate (hassfest and HACS) workflows run on every PR. Frontend fails when `dist/` doesn't match the sources.
+- **Keep CI green.** The Lint, Tests, Frontend and Validate (hassfest and HACS) workflows run on every PR. Frontend fails when `dist/` doesn't match the sources. `main` is protected: changes go through a PR, which merges only when these checks pass.
+- **Keep workflow actions current by hand.** There's no Dependabot. Actions use floating major tags (`actions/checkout@v7`), and the hassfest and HACS validators follow `master`/`main`, as their docs recommend. Move to a new major version when GitHub warns about a deprecated runtime.
 - **Test behaviour changes.** Add a pytest for each bug fix and new feature, and drive the integration the way users do: websocket commands, services, the options flow. The fixtures are in `tests/conftest.py`.
 - **Stay backward compatible with stored tasks.** A new task field needs an `attr.ib` default in `store.py` so older storage files still load. It also has to be added in `websocket.py` (the `add_task` schema and `TASK_UPDATES_SCHEMA`), in `panel/src/types.ts`, and in a test that loads old storage.
 - **Keep one source of truth.** Due dates come from `compute_next_due()`. Option keys and defaults live in `const.py`. Don't duplicate either.
@@ -61,8 +62,10 @@ scripts/setup && scripts/develop
 ## Release
 
 1. Bump the version in **both** `const.py` (`VERSION`) and `panel/src/const.ts`. A test checks they match.
-2. Rebuild `panel/dist`, then commit and push to `main`.
-3. Create a GitHub release with tag `vX.Y.Z`. `release.yml` patches the manifest version and attaches `home_maintenance.zip`, which HACS installs.
+2. Rebuild `panel/dist`, open a PR and merge it once CI is green.
+3. Create a GitHub release with tag `vX.Y.Z` on `main`. `release.yml` runs the tests and the frontend build again, then checks that the tag matches `VERSION`. It patches the manifest version and attaches `home_maintenance.zip`, which HACS installs.
+
+If the release workflow fails, the release has no zip and HACS can't install it. Delete the release, fix the problem, then create the release again.
 
 The zip is flat: `./* translations/* panel/dist/*`. A new subfolder that must ship has to be added to `release.yml`.
 
