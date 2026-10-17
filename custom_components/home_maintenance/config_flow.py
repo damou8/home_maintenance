@@ -4,7 +4,6 @@ import secrets
 from typing import Any
 
 from homeassistant.config_entries import (
-    CONN_CLASS_LOCAL_POLL,
     ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
@@ -24,7 +23,6 @@ class HomeMaintenanceConfigFlow(ConfigFlow, domain=DOMAIN):
     """Config flow for Home Maintenenance."""
 
     VERSION = "1.1.0"
-    CONNECTION_CLASS = CONN_CLASS_LOCAL_POLL
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -52,17 +50,13 @@ class HomeMaintenanceConfigFlow(ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
+    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:  # noqa: ARG004
         """Handle callback for options flow."""
-        return HomeMaintenanceOptionsFlowHandler(config_entry)
+        return HomeMaintenanceOptionsFlowHandler()
 
 
 class HomeMaintenanceOptionsFlowHandler(OptionsFlow):
     """Options flow for Home Maintenenance."""
-
-    def __init__(self, config_entry: ConfigEntry) -> None:
-        """Initialize setup of options flow."""
-        self.config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None

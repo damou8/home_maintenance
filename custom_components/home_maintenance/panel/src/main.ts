@@ -187,16 +187,33 @@ export class HomeMaintenancePanel extends LitElement {
         }
     };
 
+    // ha-data-table re-processes its rows whenever it gets a new columns/data reference,
+    // so both are cached and only rebuilt when their inputs change.
+    private _columnsCache?: { key: string; columns: Record<string, any> };
+    private _rowsCache?: { tasks: Task[]; rows: any[] };
+
     private get _columnsToDisplay() {
-        return Object.fromEntries(
-            Object.entries(this._columns).filter(([_, col]) =>
-                this.narrow ? col.showNarrow !== false : true
-            )
-        );
+        const key = `${this.narrow}|${this.hass!.language}`;
+        if (this._columnsCache?.key !== key) {
+            const columns = Object.fromEntries(
+                Object.entries(this._columns).filter(([_, col]) =>
+                    this.narrow ? col.showNarrow !== false : true
+                )
+            );
+            this._columnsCache = { key, columns };
+        }
+        return this._columnsCache.columns;
     }
 
     private get _rows() {
-        return this.tasks.map((task: Task) => ({
+        if (this._rowsCache?.tasks !== this.tasks) {
+            this._rowsCache = { tasks: this.tasks, rows: this._computeRows(this.tasks) };
+        }
+        return this._rowsCache.rows;
+    }
+
+    private _computeRows(tasks: Task[]) {
+        return tasks.map((task: Task) => ({
             icon: task.icon,
             id: task.id,
             title: task.title,
@@ -325,13 +342,24 @@ export class HomeMaintenancePanel extends LitElement {
         }
     }
 
-    private async loadData() {
+    private async connect() {
         await loadConfigDashboard();
-        this.tags = await loadTags(this.hass!);
-        this.tasks = await loadTasks(this.hass!);
         this.config = await getConfig(this.hass!);
-        this.registry = await loadRegistryEntries(this.hass!);
-        this.labelRegistry = await loadLabelRegistry(this.hass!);
+        await this.loadData();
+    }
+
+    private async loadData() {
+        // Fetch everything first, then assign in one go so the table renders once with complete data
+        const [tags, tasks, registry, labelRegistry] = await Promise.all([
+            loadTags(this.hass!),
+            loadTasks(this.hass!),
+            loadRegistryEntries(this.hass!),
+            loadLabelRegistry(this.hass!),
+        ]);
+        this.registry = registry;
+        this.labelRegistry = labelRegistry;
+        this.tags = tags;
+        this.tasks = tasks;
     }
 
     private async resetForm() {
@@ -345,7 +373,7 @@ export class HomeMaintenancePanel extends LitElement {
             tag: "",
         };
 
-        this.tasks = await loadTasks(this.hass!);
+        await this.loadData();
     }
 
     private async resetEditForm() {
@@ -391,7 +419,7 @@ export class HomeMaintenancePanel extends LitElement {
 
     connectedCallback() {
         super.connectedCallback();
-        this.loadData();
+        this.connect();
     }
 
     render() {
@@ -503,7 +531,7 @@ export class HomeMaintenancePanel extends LitElement {
         return html`
             <ha-dialog
                 open
-                heading="${localize('panel.dialog.edit_task.title', this.hass.language)}: ${this._editFormData.title}"
+                header-title="${localize('panel.dialog.edit_task.title', this.hass.language)}: ${this._editFormData.title}"
                 prevent-scrim-close
                 @closed=${this._handleDialogClosed}
             >
@@ -524,6 +552,7 @@ export class HomeMaintenancePanel extends LitElement {
                     <ha-button slot="primaryAction" @click=${this._handleSaveEditClick}>
                         ${localize('panel.dialog.edit_task.actions.save', this.hass.language)}
                     </ha-button>
+                </ha-dialog-footer>
             </ha-dialog>
         `;
     }
@@ -639,6 +668,8 @@ export class HomeMaintenancePanel extends LitElement {
     }
 
     private _handleDialogClosed(e: CustomEvent) {
+        // Ignore "closed" events bubbling up from components inside the dialog
+        if (e.target !== e.currentTarget) return;
         this._editingTaskId = null;
     }
 
