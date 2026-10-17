@@ -10,7 +10,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, ServiceCall, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.entity_registry import RegistryEntry  # noqa: TC002
+from homeassistant.helpers.entity_registry import RegistryEntry
 from homeassistant.util import dt as dt_util
 
 from . import const
