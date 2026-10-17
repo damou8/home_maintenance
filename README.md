@@ -36,7 +36,7 @@ Thank you for understanding and helping keep this integration focused and mainta
 
 ## 🛠️ Installation
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=TJPoorman&repository=home_maintenance&category=Integration)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=damou8&repository=home_maintenance&category=Integration)
 
 <details>
 <summary>Click to show installation instructions</summary>
@@ -46,7 +46,7 @@ Thank you for understanding and helping keep this integration focused and mainta
 <li><u>Using HACS:</u><br>
 In the HACS panel, search for 'Home Maintenance', open the repository and click 'Download'.</li>
 <li><u>Manually:</u><br>
-Download the <a href="https://github.com/TJPoorman/home_maintenance/releases">latest release</a> as a zip file and extract it into the `custom_components` folder in your HA installation.</li>
+Download the <a href="https://github.com/damou8/home_maintenance/releases">latest release</a> as a zip file and extract it into the `custom_components` folder in your HA installation.</li>
 </ul>
 <li>Restart HA to load the integration into HA.</li>
 <li>Go to Settings -> Devices & services and click 'ADD INTEGRATION' button. Look for Home Maintenance and click to add it.</li>
