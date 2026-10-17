@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: custom_components/home_maintenance/panel
+        working-directory: custom_components/home_maintenance/frontend
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v7
@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: "24"
           cache: npm
-          cache-dependency-path: custom_components/home_maintenance/panel/package-lock.json
+          cache-dependency-path: custom_components/home_maintenance/frontend/package-lock.json
 
       - name: Install dependencies
         run: npm ci

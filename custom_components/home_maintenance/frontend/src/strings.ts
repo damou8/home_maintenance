@@ -1,5 +1,5 @@
-// Strings for the dashboard card, which is loaded on every dashboard and
-// kept separate from the panel's translations to stay small.
+// Strings for the dashboard card, which runs in the browser and so cannot
+// use the integration's translations.
 const STRINGS: Record<string, Record<string, string>> = {
     en: {
         next: "Next: {date} ({pct}%)",

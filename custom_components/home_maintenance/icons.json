@@ -1,0 +1,17 @@
+{
+  "entity": {
+    "button": {
+      "mark_done": {
+        "default": "mdi:check-circle-outline"
+      }
+    }
+  },
+  "services": {
+    "reset_last_performed": {
+      "service": "mdi:check-circle-outline"
+    },
+    "send_notifications": {
+      "service": "mdi:bell-ring-outline"
+    }
+  }
+}

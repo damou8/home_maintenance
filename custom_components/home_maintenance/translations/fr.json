@@ -1,26 +1,20 @@
 {
   "config": {
-    "flow_title": "Home Maintenance",
     "step": {
       "user": {
-        "title": "Configurer Home Maintenance",
-        "description": "Configurer l'intégration Home Maintenance.",
-        "data": {
-          "admin_only": "Réserver le panneau aux administrateurs",
-          "sidebar_title": "Le nom affiché dans la barre latérale pour cette intégration."
-        }
+        "title": "Home Maintenance",
+        "description": "Suivez vos tâches récurrentes. Une fois l'intégration ajoutée, ajoutez vos tâches avec **Ajouter une tâche**."
       }
     },
     "abort": {
-      "single_instance_allowed": "Une seule instance de Home Maintenance est autorisée."
+      "single_instance_allowed": "Home Maintenance est déjà configuré."
     }
   },
   "options": {
     "step": {
       "init": {
+        "title": "Notifications",
         "data": {
-          "admin_only": "Réserver le panneau aux administrateurs",
-          "sidebar_title": "Le nom affiché dans la barre latérale pour cette intégration.",
           "notify_targets": "Notifier",
           "notify_time": "Heure de notification",
           "notify_days_before": "Rappel (jours avant l'échéance)",
@@ -31,6 +25,130 @@
           "notify_days_before": "0 désactive le rappel. Une notification est toujours envoyée le jour de l'échéance."
         }
       }
+    }
+  },
+  "config_subentries": {
+    "task": {
+      "initiate_flow": {
+        "user": "Ajouter une tâche"
+      },
+      "entry_type": "Tâche",
+      "step": {
+        "user": {
+          "title": "Ajouter une tâche",
+          "data": {
+            "title": "Titre",
+            "interval_value": "Tous les",
+            "interval_type": "Unité",
+            "last_performed": "Dernière réalisation",
+            "icon": "Icône",
+            "tag_id": "Tag NFC"
+          },
+          "data_description": {
+            "interval_value": "Fréquence de la tâche, dans l'unité ci-dessous.",
+            "tag_id": "Scanner ce tag marque la tâche comme faite.",
+            "last_performed": "Laisser vide pour aujourd'hui."
+          },
+          "sections": {
+            "notifications": {
+              "name": "Notifications",
+              "data": {
+                "notify_mode": "Notifier",
+                "notify_targets": "Cibles personnalisées"
+              },
+              "data_description": {
+                "notify_mode": "Les cibles par défaut se règlent dans les options de l'intégration.",
+                "notify_targets": "Utilisées avec « Cibles personnalisées »."
+              }
+            }
+          }
+        },
+        "reconfigure": {
+          "title": "Modifier la tâche",
+          "data": {
+            "title": "Titre",
+            "interval_value": "Tous les",
+            "interval_type": "Unité",
+            "last_performed": "Dernière réalisation",
+            "icon": "Icône",
+            "tag_id": "Tag NFC",
+            "enabled": "Activée"
+          },
+          "data_description": {
+            "interval_value": "Fréquence de la tâche, dans l'unité ci-dessous.",
+            "tag_id": "Scanner ce tag marque la tâche comme faite.",
+            "enabled": "Une tâche désactivée n'est jamais à faire et n'envoie aucune notification."
+          },
+          "sections": {
+            "notifications": {
+              "name": "Notifications",
+              "data": {
+                "notify_mode": "Notifier",
+                "notify_targets": "Cibles personnalisées"
+              },
+              "data_description": {
+                "notify_mode": "Les cibles par défaut se règlent dans les options de l'intégration.",
+                "notify_targets": "Utilisées avec « Cibles personnalisées »."
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "empty_title": "Saisissez un titre.",
+        "no_notify_targets": "Choisissez au moins une cible personnalisée."
+      },
+      "abort": {
+        "task_updated": "La tâche est modifiée."
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "mark_done": {
+        "name": "Marquer comme fait"
+      }
+    }
+  },
+  "selector": {
+    "interval_type": {
+      "options": {
+        "days": "Jours",
+        "weeks": "Semaines",
+        "months": "Mois"
+      }
+    },
+    "notify_mode": {
+      "options": {
+        "default": "Cibles par défaut",
+        "custom": "Cibles personnalisées",
+        "none": "Aucune notification"
+      }
+    }
+  },
+  "exceptions": {
+    "not_a_task": {
+      "message": "{entity_id} n'est pas une tâche Home Maintenance."
+    }
+  },
+  "services": {
+    "reset_last_performed": {
+      "name": "Marquer une tâche comme faite",
+      "description": "Marque des tâches comme faites, aujourd'hui ou à la date donnée, ce qui fixe leur prochaine échéance.",
+      "fields": {
+        "entity_id": {
+          "name": "Tâche",
+          "description": "Les entités de la tâche : son capteur d'échéance ou son bouton Marquer comme fait."
+        },
+        "performed_date": {
+          "name": "Date de réalisation",
+          "description": "Aujourd'hui par défaut."
+        }
+      }
+    },
+    "send_notifications": {
+      "name": "Envoyer les notifications",
+      "description": "Envoie maintenant les notifications des tâches à faire, comme la vérification quotidienne."
     }
   }
 }

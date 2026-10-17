@@ -1,6 +1,7 @@
 """Tests for due-task notifications."""
 
 import pytest
+from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import (
@@ -8,20 +9,12 @@ from pytest_homeassistant_custom_component.common import (
     async_mock_service,
 )
 
-from .conftest import days_ago
+from .conftest import add_task, update_task
 
 
-async def add_task(ws, title: str, interval_days: int, done_days_ago: int, **kw):
-    """Add a task due in `interval_days - done_days_ago` days."""
-    result = await ws(
-        type="home_maintenance/add_task",
-        title=title,
-        interval_value=interval_days,
-        interval_type="days",
-        last_performed=days_ago(done_days_ago),
-        **kw,
-    )
-    return result["id"]
+def custom(*targets: str) -> dict:
+    """Return the notifications section of a task with custom targets."""
+    return {"notifications": {"notify_mode": "custom", "notify_targets": list(targets)}}
 
 
 async def send(hass: HomeAssistant) -> None:
@@ -36,13 +29,13 @@ def notify_calls(hass: HomeAssistant):
 
 
 async def test_due_today_overdue_and_reminder(
-    hass: HomeAssistant, setup_integration, ws, notify_calls
+    hass: HomeAssistant, setup_integration, notify_calls
 ) -> None:
     """Reminder the day before, then on the due date and while overdue."""
-    await add_task(ws, "Due tomorrow", 7, 6)
-    await add_task(ws, "Due today", 7, 7)
-    await add_task(ws, "Late", 7, 10)
-    await add_task(ws, "Not soon", 7, 2)
+    await add_task(hass, setup_integration, "Due tomorrow", 7, 6)
+    await add_task(hass, setup_integration, "Due today", 7, 7)
+    await add_task(hass, setup_integration, "Late", 7, 10)
+    await add_task(hass, setup_integration, "Not soon", 7, 2)
 
     await send(hass)
 
@@ -58,28 +51,24 @@ async def test_due_today_overdue_and_reminder(
 
 
 async def test_disabled_and_none_tasks_are_silent(
-    hass: HomeAssistant, setup_integration, ws, notify_calls
+    hass: HomeAssistant, setup_integration, notify_calls
 ) -> None:
     """Disabled tasks and tasks with notifications off send nothing."""
-    task_id = await add_task(ws, "Paused", 7, 7)
-    await ws(
-        type="home_maintenance/update_task",
-        task_id=task_id,
-        updates={"enabled": False},
+    task_id = await add_task(hass, setup_integration, "Paused", 7, 7)
+    await update_task(hass, setup_integration, task_id, enabled=False)
+    await add_task(
+        hass, setup_integration, "Muted", 7, 7, notifications={"notify_mode": "none"}
     )
-    await add_task(ws, "Muted", 7, 7, notify_mode="none")
 
     await send(hass)
     assert notify_calls == []
 
 
 async def test_custom_targets(
-    hass: HomeAssistant, setup_integration, ws, notify_calls
+    hass: HomeAssistant, setup_integration, notify_calls
 ) -> None:
     """A task with custom targets only notifies those."""
-    await add_task(
-        ws, "Car", 7, 7, notify_mode="custom", notify_targets=["notify.phone_c"]
-    )
+    await add_task(hass, setup_integration, "Car", 7, 7, **custom("notify.phone_c"))
     await send(hass)
     assert len(notify_calls) == 1
     assert notify_calls[0].data["entity_id"] == ["notify.phone_c"]
@@ -96,12 +85,12 @@ async def test_custom_targets(
     ],
 )
 async def test_options_days_before_and_no_overdue(
-    hass: HomeAssistant, setup_integration, ws, notify_calls
+    hass: HomeAssistant, setup_integration, notify_calls
 ) -> None:
     """Reminder N days before, no repeat once overdue."""
-    await add_task(ws, "In three days", 10, 7)
-    await add_task(ws, "Tomorrow", 10, 9)
-    await add_task(ws, "Late", 10, 12)
+    await add_task(hass, setup_integration, "In three days", 10, 7)
+    await add_task(hass, setup_integration, "Tomorrow", 10, 9)
+    await add_task(hass, setup_integration, "Late", 10, 12)
 
     await send(hass)
     assert [c.data["message"] for c in notify_calls] == [
@@ -110,11 +99,11 @@ async def test_options_days_before_and_no_overdue(
 
 
 async def test_messages_follow_ha_language(
-    hass: HomeAssistant, setup_integration, ws, notify_calls
+    hass: HomeAssistant, setup_integration, notify_calls
 ) -> None:
     """Notifications use Home Assistant's language."""
     hass.config.language = "fr"
-    await add_task(ws, "Nettoyage VMC", 7, 8)
+    await add_task(hass, setup_integration, "Nettoyage VMC", 7, 8)
     await send(hass)
     assert notify_calls[0].data["title"] == "⚠️ Information maintenance"
     assert (
@@ -125,23 +114,23 @@ async def test_messages_follow_ha_language(
 
 @pytest.mark.parametrize("options", [{"notify_targets": []}])
 async def test_no_default_targets(
-    hass: HomeAssistant, setup_integration, ws, notify_calls
+    hass: HomeAssistant, setup_integration, notify_calls
 ) -> None:
     """Without default targets only custom-target tasks notify."""
-    await add_task(ws, "Default", 7, 7)
-    await add_task(
-        ws, "Custom", 7, 7, notify_mode="custom", notify_targets=["notify.phone_c"]
-    )
+    await add_task(hass, setup_integration, "Default", 7, 7)
+    await add_task(hass, setup_integration, "Custom", 7, 7, **custom("notify.phone_c"))
     await send(hass)
     assert [c.data["entity_id"] for c in notify_calls] == [["notify.phone_c"]]
 
 
 async def test_daily_schedule(
-    hass: HomeAssistant, setup_integration, ws, notify_calls
+    hass: HomeAssistant, setup_integration, notify_calls, freezer: FrozenDateTimeFactory
 ) -> None:
     """Notifications go out at the configured time, not before."""
-    await add_task(ws, "Due today", 7, 7)
-    today = dt_util.now().replace(microsecond=0)
+    # Start before 9:00, or the next notification would be tomorrow's
+    today = dt_util.now().replace(hour=7, minute=0, second=0, microsecond=0)
+    freezer.move_to(today)
+    await add_task(hass, setup_integration, "Due today", 7, 7)
 
     async_fire_time_changed(hass, today.replace(hour=8, minute=59, second=59))
     await hass.async_block_till_done()

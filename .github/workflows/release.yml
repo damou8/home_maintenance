@@ -25,7 +25,7 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v7
 
-      # The device version and the panel's cache-busting URL come from VERSION
+      # The device version and the card's cache-busting URL come from VERSION
       - name: Check that the tag matches the integration version
         run: |
           version=$(sed -n 's/^VERSION = "\(.*\)"$/\1/p' custom_components/home_maintenance/const.py)
@@ -38,7 +38,7 @@ jobs:
         run: |
           sed -i "s/v0.0.0/${GITHUB_REF_NAME}/" custom_components/home_maintenance/manifest.json
           cd custom_components/home_maintenance/
-          zip ../../home_maintenance.zip ./* translations/* panel/dist/* -x '.*'
+          zip ../../home_maintenance.zip ./* translations/* frontend/dist/* -x '.*'
 
       - name: Attach the zip to the release
         uses: softprops/action-gh-release@v3

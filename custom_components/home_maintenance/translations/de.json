@@ -1,26 +1,20 @@
 {
   "config": {
-    "flow_title": "Home Maintenance",
     "step": {
       "user": {
-        "title": "Home Maintenance konfigurieren",
-        "description": "Richten Sie die Home Maintenance-Integration ein.",
-        "data": {
-          "admin_only": "Panel nur für Administratoren anzeigen",
-          "sidebar_title": "Der Name, der in der Seitenleiste für diese Integration angezeigt wird."
-        }
+        "title": "Home Maintenance",
+        "description": "Behalte wiederkehrende Aufgaben im Blick. Füge nach dem Einrichten deine Aufgaben mit **Aufgabe hinzufügen** hinzu."
       }
     },
     "abort": {
-      "single_instance_allowed": "Es ist nur eine einzige Instanz von Home Maintenance erlaubt."
+      "single_instance_allowed": "Home Maintenance ist bereits eingerichtet."
     }
   },
   "options": {
     "step": {
       "init": {
+        "title": "Benachrichtigungen",
         "data": {
-          "admin_only": "Panel nur für Administratoren anzeigen",
-          "sidebar_title": "Der Name, der in der Seitenleiste für diese Integration angezeigt wird.",
           "notify_targets": "Benachrichtigen",
           "notify_time": "Uhrzeit der Benachrichtigung",
           "notify_days_before": "Erinnerung (Tage vor Fälligkeit)",
@@ -31,6 +25,130 @@
           "notify_days_before": "0 deaktiviert die Erinnerung. Am Fälligkeitstag wird immer benachrichtigt."
         }
       }
+    }
+  },
+  "config_subentries": {
+    "task": {
+      "initiate_flow": {
+        "user": "Aufgabe hinzufügen"
+      },
+      "entry_type": "Aufgabe",
+      "step": {
+        "user": {
+          "title": "Aufgabe hinzufügen",
+          "data": {
+            "title": "Titel",
+            "interval_value": "Alle",
+            "interval_type": "Einheit",
+            "last_performed": "Zuletzt erledigt",
+            "icon": "Symbol",
+            "tag_id": "NFC-Tag"
+          },
+          "data_description": {
+            "interval_value": "Wie oft die Aufgabe wiederkehrt, in der Einheit darunter.",
+            "tag_id": "Das Scannen dieses Tags markiert die Aufgabe als erledigt.",
+            "last_performed": "Leer lassen für heute."
+          },
+          "sections": {
+            "notifications": {
+              "name": "Benachrichtigungen",
+              "data": {
+                "notify_mode": "Benachrichtigen",
+                "notify_targets": "Eigene Ziele"
+              },
+              "data_description": {
+                "notify_mode": "Die Standardziele legst du in den Optionen der Integration fest.",
+                "notify_targets": "Wird mit „Eigene Ziele“ verwendet."
+              }
+            }
+          }
+        },
+        "reconfigure": {
+          "title": "Aufgabe ändern",
+          "data": {
+            "title": "Titel",
+            "interval_value": "Alle",
+            "interval_type": "Einheit",
+            "last_performed": "Zuletzt erledigt",
+            "icon": "Symbol",
+            "tag_id": "NFC-Tag",
+            "enabled": "Aktiviert"
+          },
+          "data_description": {
+            "interval_value": "Wie oft die Aufgabe wiederkehrt, in der Einheit darunter.",
+            "tag_id": "Das Scannen dieses Tags markiert die Aufgabe als erledigt.",
+            "enabled": "Eine deaktivierte Aufgabe ist nie fällig und sendet keine Benachrichtigungen."
+          },
+          "sections": {
+            "notifications": {
+              "name": "Benachrichtigungen",
+              "data": {
+                "notify_mode": "Benachrichtigen",
+                "notify_targets": "Eigene Ziele"
+              },
+              "data_description": {
+                "notify_mode": "Die Standardziele legst du in den Optionen der Integration fest.",
+                "notify_targets": "Wird mit „Eigene Ziele“ verwendet."
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "empty_title": "Gib einen Titel ein.",
+        "no_notify_targets": "Wähle mindestens ein eigenes Ziel."
+      },
+      "abort": {
+        "task_updated": "Die Aufgabe wurde geändert."
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "mark_done": {
+        "name": "Als erledigt markieren"
+      }
+    }
+  },
+  "selector": {
+    "interval_type": {
+      "options": {
+        "days": "Tage",
+        "weeks": "Wochen",
+        "months": "Monate"
+      }
+    },
+    "notify_mode": {
+      "options": {
+        "default": "Standardziele",
+        "custom": "Eigene Ziele",
+        "none": "Keine Benachrichtigungen"
+      }
+    }
+  },
+  "exceptions": {
+    "not_a_task": {
+      "message": "{entity_id} ist keine Home-Maintenance-Aufgabe."
+    }
+  },
+  "services": {
+    "reset_last_performed": {
+      "name": "Aufgabe als erledigt markieren",
+      "description": "Markiert Aufgaben als erledigt, heute oder am angegebenen Datum, und legt so ihre nächste Fälligkeit fest.",
+      "fields": {
+        "entity_id": {
+          "name": "Aufgabe",
+          "description": "Die Entitäten der Aufgabe: ihr Fälligkeitssensor oder ihre Als-erledigt-Schaltfläche."
+        },
+        "performed_date": {
+          "name": "Erledigt am",
+          "description": "Standardmäßig heute."
+        }
+      }
+    },
+    "send_notifications": {
+      "name": "Benachrichtigungen senden",
+      "description": "Sendet die Benachrichtigungen für fällige Aufgaben sofort, wie die tägliche Prüfung."
     }
   }
 }

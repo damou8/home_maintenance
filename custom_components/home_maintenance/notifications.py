@@ -1,8 +1,9 @@
 """Send notifications for due Home Maintenance tasks."""
 
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from datetime import datetime
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -11,8 +12,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.util import dt as dt_util
 
 from . import const
-from .binary_sensor import compute_next_due
-from .store import TaskStore
+from .tasks import compute_next_due, iter_tasks
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,13 +51,10 @@ MESSAGES = {
 class TaskNotifier:
     """Send a daily notification for tasks that are due soon, today or overdue."""
 
-    def __init__(
-        self, hass: HomeAssistant, entry: ConfigEntry, store: TaskStore
-    ) -> None:
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize the notifier."""
         self.hass = hass
         self.entry = entry
-        self.store = store
 
     @property
     def _options(self) -> dict:
@@ -81,16 +78,16 @@ class TaskNotifier:
             second=notify_time.second,
         )
 
-    def _targets_for(self, task: dict) -> list[str]:
+    def _targets_for(self, task: Mapping[str, Any]) -> list[str]:
         """Return the notify entities a task's notifications go to."""
-        mode = task.get("notify_mode", const.NOTIFY_MODE_DEFAULT)
+        mode = task.get(const.CONF_NOTIFY_MODE, const.NOTIFY_MODE_DEFAULT)
         if mode == const.NOTIFY_MODE_NONE:
             return []
         if mode == const.NOTIFY_MODE_CUSTOM:
-            return task.get("notify_targets") or []
+            return task.get(const.CONF_NOTIFY_TARGETS) or []
         return self._options.get(const.CONF_NOTIFY_TARGETS) or []
 
-    def _message_for(self, task: dict, days_left: int) -> tuple[str, str] | None:
+    def _message_for(self, title: str, days_left: int) -> tuple[str, str] | None:
         """Return (title, message) for a task, or None if nothing is to be sent."""
         language = (self.hass.config.language or "en").split("-")[0]
         texts = MESSAGES.get(language, MESSAGES["en"])
@@ -102,8 +99,6 @@ class TaskNotifier:
         overdue = self._options.get(
             const.CONF_NOTIFY_OVERDUE, const.DEFAULT_NOTIFY_OVERDUE
         )
-        title = task["title"]
-
         if days_left > 0:
             if days_left != days_before:
                 return None
@@ -121,8 +116,9 @@ class TaskNotifier:
     async def async_send_notifications(self) -> None:
         """Notify about every enabled task that is due soon, today or overdue."""
         today = dt_util.now().date()
-        for task in self.store.get_all():
-            if not task.get("enabled", True):
+        for subentry in iter_tasks(self.entry):
+            task = subentry.data
+            if not task.get(const.CONF_ENABLED, True):
                 continue
             targets = self._targets_for(task)
             if not targets:
@@ -130,7 +126,7 @@ class TaskNotifier:
             due = compute_next_due(task)
             if due is None:
                 continue
-            message = self._message_for(task, (due.date() - today).days)
+            message = self._message_for(subentry.title, (due.date() - today).days)
             if message is None:
                 continue
 
@@ -144,4 +140,4 @@ class TaskNotifier:
                     blocking=True,
                 )
             except HomeAssistantError:
-                _LOGGER.exception("Failed to send notification for %s", task["title"])
+                _LOGGER.exception("Failed to send notification for %s", subentry.title)

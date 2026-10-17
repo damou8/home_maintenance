@@ -1,21 +1,19 @@
 {
   "domain": "home_maintenance",
   "name": "Home Maintenance",
-  "after_dependencies": [
-    "frontend"
-  ],
   "codeowners": [
     "@damou8"
   ],
   "config_flow": true,
   "dependencies": [
+    "frontend",
     "http",
-    "panel_custom",
     "tag"
   ],
   "documentation": "https://github.com/damou8/home_maintenance",
-  "iot_class": "local_polling",
+  "iot_class": "calculated",
   "issue_tracker": "https://github.com/damou8/home_maintenance/issues",
   "requirements": [],
+  "single_config_entry": true,
   "version": "v0.0.0"
 }

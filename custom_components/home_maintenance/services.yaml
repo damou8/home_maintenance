@@ -1,25 +1,14 @@
 reset_last_performed:
-  name: Reset Last Performed
-  description: >
-    Resets the 'last_performed' date for a maintenance task entity, and updates the 'next_due' date based on the interval.
   fields:
     entity_id:
-      name: Entity ID
-      description: The task entity (or entities) to reset.
       required: true
       selector:
         entity:
           integration: home_maintenance
-          domain: binary_sensor
           multiple: true
     performed_date:
-      name: Performed Date
-      description: Optionally specify the date the task was last performed.
       required: false
       example: "2025-06-01"
       selector:
         date:
 send_notifications:
-  name: Send Notifications
-  description: >
-    Sends the notifications for due tasks now, the same way the daily check does.
