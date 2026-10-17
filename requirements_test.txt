@@ -1,0 +1,4 @@
+# pytest-homeassistant-custom-component pins the matching homeassistant version
+pytest-homeassistant-custom-component==0.13.373
+# Needed by panel_custom/frontend, which the integration depends on
+home-assistant-frontend==20260930.4
