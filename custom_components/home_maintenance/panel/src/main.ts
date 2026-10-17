@@ -2,7 +2,7 @@ import {
     mdiCheckCircleOutline,
 } from "@mdi/js";
 import { LitElement, html, nothing } from "lit";
-import { property, state, query } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 import type { HomeAssistant } from "custom-card-helpers";
 import { formatDateNumeric } from "custom-card-helpers";
 
@@ -10,7 +10,7 @@ import { localize } from '../localize/localize';
 import { VERSION } from "./const";
 import { loadConfigDashboard } from "./helpers";
 import { commonStyle } from './styles'
-import { EntityRegistryEntry, IntegrationConfig, IntervalType, INTERVAL_TYPES, getIntervalTypeLabels, Label, NOTIFY_MODES, NotifyMode, Task, Tag } from './types';
+import { EntityRegistryEntry, IntegrationConfig, INTERVAL_TYPES, getIntervalTypeLabels, Label, NOTIFY_MODES, NotifyMode, Task, Tag } from './types';
 import { completeTask, getConfig, loadLabelRegistry, loadRegistryEntries, loadTags, loadTask, loadTasks, removeTask, saveTask, updateTask } from './data/websockets';
 import './components/hm-task-menu'
 
@@ -166,8 +166,8 @@ export class HomeMaintenancePanel extends LitElement {
                 template: (task: Task) => html`
                 <ha-icon-button
                     @click=${() => this._handleCompleteTaskClick(task.id)}
-                    .label="Complete"
-                    title="Mark Task Complete"
+                    .label=${localize('panel.cards.current.actions.complete', this.hass!.language)}
+                    title=${localize('panel.cards.current.actions.complete', this.hass!.language)}
                     .path=${mdiCheckCircleOutline}
                 ></ha-icon-button>
               `,
@@ -181,7 +181,6 @@ export class HomeMaintenancePanel extends LitElement {
                 type: "overflow-menu",
                 template: (task: any) => html`
                     <hm-task-menu
-                        .hass=${this.hass}
                         .items=${[
                         {
                             value: 'edit',

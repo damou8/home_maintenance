@@ -71,7 +71,6 @@ class HomeMaintenanceCard extends LitElement {
         const hass = this.hass as any;
         const labels = this._config.labels ?? [];
         const showDisabled = this._config.show_disabled ?? false;
-        const threshold = this._config.warning_threshold ?? DEFAULT_WARNING_THRESHOLD;
         const now = Date.now();
 
         const items: TaskItem[] = [];

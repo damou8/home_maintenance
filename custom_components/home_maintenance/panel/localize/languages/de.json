@@ -1,7 +1,6 @@
 {
     "common": {
         "loading": "Wird geladen...",
-        "none": "Keine",
         "no_tasks": "Keine Aufgaben gefunden."
     },
     "intervals": {
@@ -38,6 +37,12 @@
                     },
                     "label": {
                         "heading": "Bezeichnung(en)"
+                    },
+                    "notify_mode": {
+                        "heading": "Benachrichtigungen"
+                    },
+                    "notify_targets": {
+                        "heading": "Benachrichtigen"
                     }
                 },
                 "sections": {
@@ -53,16 +58,16 @@
             },
             "current": {
                 "title": "Aktuelle Aufgaben",
-                "no_items": "Keine Aufgaben gefunden.",
-                "every": "alle",
-                "last": "Zuletzt",
-                "next": "Nächste Fälligkeit",
+                "next": "Fällig am",
                 "actions": {
                     "complete": "Abschließen",
                     "edit": "Bearbeiten",
-                    "remove": "Entfernen"
+                    "remove": "Entfernen",
+                    "disable": "Deaktivieren",
+                    "enable": "Aktivieren"
                 },
-                "confirm_remove": "Sind Sie sicher, dass Sie diese Aufgabe entfernen möchten?"
+                "confirm_remove": "Sind Sie sicher, dass Sie diese Aufgabe entfernen möchten?",
+                "disabled": "Deaktiviert"
             }
         },
         "dialog": {
@@ -87,6 +92,12 @@
                     },
                     "label": {
                         "heading": "Bezeichnung(en)"
+                    },
+                    "notify_mode": {
+                        "heading": "Benachrichtigungen"
+                    },
+                    "notify_targets": {
+                        "heading": "Benachrichtigen"
                     }
                 },
                 "sections": {
@@ -97,6 +108,15 @@
                     "save": "Speichern"
                 }
             }
+        },
+        "notify": {
+            "default_targets": "Standardziele: {targets}",
+            "no_default_targets": "Noch keine Standardziele: unter Einstellungen → Geräte & Dienste → Home Maintenance → Konfigurieren festlegen"
         }
+    },
+    "notify_modes": {
+        "default": "Standardziele",
+        "custom": "Eigene Ziele",
+        "none": "Keine Benachrichtigungen"
     }
 }

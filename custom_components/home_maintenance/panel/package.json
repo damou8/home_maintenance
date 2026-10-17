@@ -1,25 +1,20 @@
 {
-  "name": "panel",
-  "version": "1.0.0",
-  "description": "",
-  "main": "main.js",
+  "name": "home-maintenance-panel",
+  "private": true,
+  "description": "Sidebar panel and dashboard card of the Home Maintenance integration",
+  "license": "MIT",
   "scripts": {
     "build": "esbuild src/main.ts src/card/home-maintenance-card.ts --bundle --outdir=dist --entry-names=[name] --format=esm --target=es2020 --minify",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "typecheck": "tsc --noEmit --noUnusedLocals"
   },
-  "keywords": [],
-  "author": "TJPoorman",
-  "license": "ISC",
   "devDependencies": {
     "esbuild": "^0.25.5",
     "lit": "^3.3.0",
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "custom-card-helpers": "^1.9.0",
-    "@material/mwc-select": "latest",
-    "@material/mwc-list": "latest",
     "@mdi/js": "7.4.47",
-    "@mdi/svg": "7.4.47"
+    "custom-card-helpers": "^1.9.0",
+    "intl-messageformat": "^9.13.0"
   }
 }

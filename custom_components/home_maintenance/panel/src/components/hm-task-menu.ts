@@ -1,5 +1,4 @@
 import { LitElement, css, html } from 'lit';
-import type { HomeAssistant } from "custom-card-helpers";
 import { property } from "lit/decorators.js";
 
 export interface MenuItem {
@@ -13,12 +12,7 @@ export interface MenuItem {
  * Borrowed from https://codeberg.org/dan-danache/ha-zigbee-map/src/branch/master/custom_components/zigbee_map/panel/src/zigbee-map-panel.js
  */
 class HMTaskMenu extends LitElement {
-    @property() hass?: HomeAssistant;
     @property() items: MenuItem[] = [];
-
-    constructor() {
-        super();
-    }
 
     render() {
         return html`
