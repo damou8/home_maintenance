@@ -1,26 +1,20 @@
 {
   "config": {
-    "flow_title": "Home Maintenance",
     "step": {
       "user": {
-        "title": "Configure Home Maintenance",
-        "description": "Set up the Home Maintenance integration.",
-        "data": {
-          "admin_only": "Restrict panel to admins only",
-          "sidebar_title": "The name shown in the sidebar for this integration."
-        }
+        "title": "Home Maintenance",
+        "description": "Track recurring tasks. Once the integration is added, add your tasks with **Add task**."
       }
     },
     "abort": {
-      "single_instance_allowed": "Only a single instance of Home Maintenance is allowed."
+      "single_instance_allowed": "Home Maintenance is already set up."
     }
   },
   "options": {
     "step": {
       "init": {
+        "title": "Notifications",
         "data": {
-          "admin_only": "Restrict panel to admins only",
-          "sidebar_title": "The name shown in the sidebar for this integration.",
           "notify_targets": "Notify",
           "notify_time": "Notification time",
           "notify_days_before": "Reminder (days before due date)",
@@ -31,6 +25,138 @@
           "notify_days_before": "0 disables the reminder. A notification is always sent on the due date."
         }
       }
+    }
+  },
+  "config_subentries": {
+    "task": {
+      "initiate_flow": {
+        "user": "Add task"
+      },
+      "entry_type": "Task",
+      "step": {
+        "user": {
+          "title": "Add a task",
+          "data": {
+            "title": "Title",
+            "interval_value": "Every",
+            "interval_type": "Unit",
+            "last_performed": "Last done",
+            "icon": "Icon",
+            "tag_id": "NFC tag"
+          },
+          "data_description": {
+            "interval_value": "How often the task repeats, in the unit below.",
+            "tag_id": "Scanning this tag marks the task as done.",
+            "last_performed": "Leave blank for today."
+          },
+          "sections": {
+            "notifications": {
+              "name": "Notifications",
+              "data": {
+                "notify_mode": "Notify",
+                "notify_targets": "Custom targets"
+              },
+              "data_description": {
+                "notify_mode": "Default targets are set in the integration's options.",
+                "notify_targets": "Used with Custom targets."
+              }
+            }
+          }
+        },
+        "reconfigure": {
+          "title": "Change task",
+          "data": {
+            "title": "Title",
+            "interval_value": "Every",
+            "interval_type": "Unit",
+            "last_performed": "Last done",
+            "icon": "Icon",
+            "tag_id": "NFC tag",
+            "enabled": "Enabled"
+          },
+          "data_description": {
+            "interval_value": "How often the task repeats, in the unit below.",
+            "tag_id": "Scanning this tag marks the task as done.",
+            "enabled": "A disabled task is never due and sends no notifications."
+          },
+          "sections": {
+            "notifications": {
+              "name": "Notifications",
+              "data": {
+                "notify_mode": "Notify",
+                "notify_targets": "Custom targets"
+              },
+              "data_description": {
+                "notify_mode": "Default targets are set in the integration's options.",
+                "notify_targets": "Used with Custom targets."
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "empty_title": "Enter a title.",
+        "no_notify_targets": "Choose at least one target for custom targets."
+      },
+      "abort": {
+        "task_updated": "The task is updated."
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "mark_done": {
+        "name": "Mark done"
+      }
+    },
+    "sensor": {
+      "last_performed": {
+        "name": "Last done"
+      },
+      "next_due": {
+        "name": "Next due"
+      }
+    }
+  },
+  "selector": {
+    "interval_type": {
+      "options": {
+        "days": "Days",
+        "weeks": "Weeks",
+        "months": "Months"
+      }
+    },
+    "notify_mode": {
+      "options": {
+        "default": "Default targets",
+        "custom": "Custom targets",
+        "none": "No notifications"
+      }
+    }
+  },
+  "exceptions": {
+    "not_a_task": {
+      "message": "{entity_id} is not a Home Maintenance task."
+    }
+  },
+  "services": {
+    "reset_last_performed": {
+      "name": "Mark task done",
+      "description": "Marks tasks as done, today or on the given date, which sets their next due date.",
+      "fields": {
+        "entity_id": {
+          "name": "Task",
+          "description": "The task's entities: its due sensor or its Mark done button."
+        },
+        "performed_date": {
+          "name": "Date done",
+          "description": "Defaults to today."
+        }
+      }
+    },
+    "send_notifications": {
+      "name": "Send notifications",
+      "description": "Sends the notifications for due tasks now, the same way the daily check does."
     }
   }
 }

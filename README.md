@@ -4,16 +4,15 @@ Keep your home in top shape by tracking recurring maintenance tasks right inside
 
 This custom integration helps you remember important chores like changing air filters, cleaning gutters, or testing smoke alarms — and shows you when they're due.
 
-> This is a maintained fork of [TJPoorman/home_maintenance](https://github.com/TJPoorman/home_maintenance), updated for current Home Assistant releases. It requires **Home Assistant 2026.3** or newer.
+> This is a maintained fork of [TJPoorman/home_maintenance](https://github.com/TJPoorman/home_maintenance), updated for current Home Assistant releases. It requires **Home Assistant 2026.9** or newer.
 
 ---
 
 ## ✨ What It Does
 
-- 📋 Lets you create recurring tasks (e.g., “Change HVAC filter every 90 days”)
-- 🔔 Creates entities in Home Assistant to be able to create automations and display on dashboards
-- ✅ Lets you mark tasks as completed so it can track the next due date
-- 📊 Shows tasks in a clean, easy-to-use interface built into Home Assistant
+- 📋 Lets you create recurring tasks (e.g., “Change HVAC filter every 90 days”), right in the integration's settings
+- 🔔 Gives each task a sensor that turns on when it's due, for automations and dashboards
+- ✅ Lets you mark tasks as done with a button, a dashboard card, an action or an NFC tag
 - 📱 Notifies your phones when tasks are due
 - 🃏 Includes a dashboard card showing your tasks and how soon they're due
 
@@ -32,9 +31,9 @@ Thank you for understanding and helping keep this integration focused and mainta
 
 ## 🖼️ Screenshots
 
-- ![Task Panel](screenshots/task-panel.PNG)
-- ![Integration Page](screenshots/integration-page.PNG)
-- ![Entity Attributes](screenshots/entity-attributes.PNG)
+| Your tasks | Adding a task | Dashboard card |
+|---|---|---|
+| ![Tasks on the integration page](screenshots/tasks.png) | ![The Add a task form](screenshots/add-task.png) | ![The dashboard card](screenshots/card.png) |
 
 ---
 
@@ -54,7 +53,7 @@ Download the <a href="https://github.com/damou8/home_maintenance/releases">lates
 </ul>
 <li>Restart HA to load the integration into HA.</li>
 <li>Go to Settings -> Devices & services and click 'ADD INTEGRATION' button. Look for Home Maintenance and click to add it.</li>
-<li>The Home Maintenance integration is ready for use. You can find the configuration panel in the menu on the left.</li>
+<li>The Home Maintenance integration is ready for use: add your first task with <b>Add task</b> on its page.</li>
 </ol>
 </details>
 
@@ -62,21 +61,34 @@ Download the <a href="https://github.com/damou8/home_maintenance/releases">lates
 
 ## 🛠️ How to Use
 
-- Open **Home Maintenance** from the Home Assistant sidebar.
-- To add a new task enter:
-  - A title (e.g., “Clean Dryer Vent”)
-  - How often it needs to be done
-  - Select the interval period (Defaults to days)
-  - The last time you did it (Optional. If omitted will be today)
-  - Select an NFC tag (Optional. Will mark the task complete when scanned)
-  - Select an icon (Optional)
-  - Click **Add Task**
-- Tasks will show if they are due or overdue
-- Click the **✓** button to mark a task done: its Last Performed date becomes today
-- Use the **⋮** menu to **Edit** or **Remove** a task
-- Use the **⋮** menu → **Disable** to pause a task (its sensor stays `off` and it sends no notifications), and **Enable** to resume it
+Tasks live on the integration's page: **Settings → Devices & services → Home Maintenance**.
 
-The panel is available in English and German, the rest of the integration (settings, notifications, dashboard card) in English, French and German.
+- **Add task** asks for:
+  - a title (e.g. “Clean dryer vent”)
+  - how often it repeats: a number and a unit (days, weeks or months)
+  - when you last did it (optional, today by default)
+  - an icon and an NFC tag (optional: scanning the tag marks the task done)
+  - who to notify (optional, see [Notifications](#-notifications))
+- A task's **⚙** button changes it. That's also where you **disable** a task: it then stays `off` and sends no notifications.
+- A task's **⋮** menu deletes it.
+
+Each task is a device (a "service" on the integration page) with four entities:
+
+- `binary_sensor.<task>`: `on` when the task is due. Its attributes give `last_performed`, `next_due`, `interval_value`, `interval_type` and `enabled`.
+- `sensor.<task>_last_done`: the date the task was last done.
+- `sensor.<task>_next_due`: the date the task is next due.
+- `button.<task>_mark_done`: press it to mark the task done today.
+
+You can also mark tasks done from the [dashboard card](#-dashboard-card), the [`reset_last_performed` action](#-available-actions) or the task's NFC tag. The integration is available in English, French and German.
+
+### ⬆️ Upgrading from 1.x
+
+Version 2.0 replaces the **Home Maintenance** sidebar panel with the integration's own settings pages, and moves your tasks there on the first start. Your entity IDs, history, labels and automations keep working. Two things change:
+
+- Each task becomes its own device, and its sensor is named after the task alone (“Clean filter” instead of “Home Maintenance Clean filter”).
+- The sidebar panel is gone. Its settings (admin only, sidebar title) no longer exist.
+
+Make a backup before updating: going back to 1.x means restoring it.
 
 ---
 
@@ -86,7 +98,7 @@ Home Maintenance can notify your phones when tasks are due, no automation needed
 
 1. Go to **Settings → Devices & services → Home Maintenance → Configure**.
 2. Pick the default **notify** entities (e.g. your phones from the Companion app), the notification time, how many days before the due date to send a reminder (`0` = no reminder), and whether to repeat the notification every day while a task is overdue.
-3. Each task has a **Notifications** setting (under *Optional settings*, or in the edit dialog):
+3. Each task has a **Notifications** section in its form:
    - **Default targets**: use the entities chosen in step 2
    - **Custom targets**: notify other entities for this task only
    - **No notifications**: never notify for this task
@@ -103,7 +115,7 @@ The integration ships a dashboard card, no extra resource to install. Edit a das
 type: custom:home-maintenance-card
 ```
 
-Each task shows its icon, name and next due date with the share of the interval left. The icon is **red** (and pulses) when the task is due, **blue** when less than 15% of the interval is left, **green** otherwise. Due tasks come first, then by due date. Tapping a task marks it done after a confirmation; holding it opens its details.
+It's the quickest way to see all your tasks at once. Each task shows its icon, name and next due date with the share of the interval left. The icon is **red** (and pulses) when the task is due, **blue** when less than 15% of the interval is left, **green** otherwise. Due tasks come first, then by due date. Tapping a task marks it done after a confirmation; holding it opens its details.
 
 | Option | Default | Description |
 |---|---|---|
@@ -130,16 +142,14 @@ Each task shows its icon, name and next due date with the share of the interval 
 
 ### `home_maintenance.reset_last_performed`
 
-Marks one or more tasks as completed and updates their `last_performed` and `next_due`.
-
-Optionally specify a date for `last_performed`.
+Marks one or more tasks as done, today or on the given date, which sets their next due date. Target a task's sensor or its Mark done button.
 
 #### Example action:
 
 ```yaml
 action: home_maintenance.reset_last_performed
 target:
-  entity_id: binary_sensor.home_maintenance_clean_gutters
+  entity_id: binary_sensor.clean_gutters
 data:
   performed_date: "2025-06-19"
 ```

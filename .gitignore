@@ -7,7 +7,7 @@ __pycache__
 coverage.xml
 .ruff_cache
 
-# Panel build tools (panel/dist is committed: it ships in the release)
+# Card build tools (frontend/dist is committed: it ships in the release)
 node_modules
 
 # misc

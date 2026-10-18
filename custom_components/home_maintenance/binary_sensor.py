@@ -1,104 +1,52 @@
-"""Support for Home Maintenance binary sensors."""
+"""Binary sensors that turn on when a task is due."""
 
-import logging
-from datetime import datetime, timedelta
-
-from dateutil.relativedelta import relativedelta
 from homeassistant.components.binary_sensor import BinarySensorEntity
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from . import const
-
-_LOGGER = logging.getLogger(__name__)
-
-
-def compute_next_due(task: dict) -> datetime | None:
-    """Return midnight of the day a task is next due, None if unknown."""
-    last = dt_util.parse_datetime(task["last_performed"])
-    if last is None:
-        return None
-    if last.tzinfo is None:
-        last = dt_util.as_utc(last)
-
-    interval_value = task["interval_value"]
-    interval_type = task["interval_type"]
-    if interval_type == "days":
-        due = last + timedelta(days=interval_value)
-    elif interval_type == "weeks":
-        due = last + timedelta(weeks=interval_value)
-    elif interval_type == "months":
-        due = last + relativedelta(months=interval_value)
-    else:
-        due = last
-    return due.replace(hour=0, minute=0, second=0, microsecond=0)
+from .const import (
+    CONF_ENABLED,
+    CONF_ICON,
+    CONF_INTERVAL_TYPE,
+    CONF_INTERVAL_VALUE,
+    CONF_LAST_PERFORMED,
+    CONF_TAG_ID,
+    DEFAULT_ICON,
+)
+from .entity import HomeMaintenanceEntity
+from .tasks import compute_next_due, iter_tasks
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: ConfigEntry,  # noqa: ARG001
-    async_add_entities: AddEntitiesCallback,
+    hass: HomeAssistant,  # noqa: ARG001
+    entry: ConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up the Home Maintenance binary sensor platform."""
-    if const.DOMAIN not in hass.data:
-        hass.data[const.DOMAIN] = {}
-    hass.data[const.DOMAIN]["add_entities"] = async_add_entities
-
-    device_id = hass.data[const.DOMAIN].get("device_id")
-    store = hass.data[const.DOMAIN].get("store")
-
-    entities = []
-    for task in store.get_all():
-        entity = HomeMaintenanceSensor(hass, task, device_id)
-        entities.append(entity)
-        hass.data[const.DOMAIN]["entities"][task["id"]] = entity
-
-    async_add_entities(entities)
+    """Set up one binary sensor per task."""
+    for subentry in iter_tasks(entry):
+        sensor = HomeMaintenanceSensor(entry, subentry)
+        entry.runtime_data.entities.append(sensor)
+        async_add_entities([sensor], config_subentry_id=subentry.subentry_id)
 
 
-class HomeMaintenanceSensor(BinarySensorEntity):
-    """Representation of a Home Maintenance binary sensor."""
+class HomeMaintenanceSensor(HomeMaintenanceEntity, BinarySensorEntity):
+    """On when the task is due."""
 
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        task: dict,
-        device_id: str,
-        labels: list[str] | None = None,
-    ) -> None:
-        """Initialize the Home Maintenance sensor."""
-        self.hass = hass
-        self.task = task
-        self._attr_name = task["title"]
-        self._attr_unique_id = f"{task['id']}"
-        self._device_id = device_id
-        self._labels = labels or []
-        self._update_state()
+    # Named after its device, which is the task
+    _attr_name = None
 
-    @property
-    def device_info(self) -> DeviceInfo | None:
-        """Return device information for this sensor."""
-        return DeviceInfo(
-            identifiers={(const.DOMAIN, const.DEVICE_KEY)},
-            name=const.NAME,
-            model=const.NAME,
-            sw_version=const.VERSION,
-            manufacturer=const.MANUFACTURER,
-        )
-
-    @property
-    def icon(self) -> str | None:
-        """Return the icon for the task."""
-        return self.task.get("icon", "mdi:calendar-check")
+    def __init__(self, entry: ConfigEntry, subentry: ConfigSubentry) -> None:
+        """Initialize the sensor."""
+        super().__init__(entry, subentry)
+        self._attr_unique_id = self._task_id
 
     def _update_state(self) -> None:
-        """Get the latest state of the sensor."""
-        enabled = self.task.get("enabled", True)
-        due = compute_next_due(self.task)
+        """Compute the state from the task's data."""
+        task = self._task_data
+        enabled = task.get(CONF_ENABLED, True)
+        due = compute_next_due(task)
 
         # A disabled task is never reported as due, one with no valid date always is
         if due is None:
@@ -107,23 +55,17 @@ class HomeMaintenanceSensor(BinarySensorEntity):
             today = dt_util.now().replace(hour=0, minute=0, second=0, microsecond=0)
             self._attr_is_on = enabled and today >= due
 
+        self._attr_icon = task.get(CONF_ICON) or DEFAULT_ICON
         self._attr_extra_state_attributes = {
-            "last_performed": self.task["last_performed"],
-            "interval_value": self.task["interval_value"],
-            "interval_type": self.task["interval_type"],
+            "last_performed": task[CONF_LAST_PERFORMED],
+            "interval_value": task[CONF_INTERVAL_VALUE],
+            "interval_type": task[CONF_INTERVAL_TYPE],
             "next_due": due.isoformat() if due else "unknown",
             "enabled": enabled,
         }
-        if self.task.get("tag_id"):
-            self._attr_extra_state_attributes["tag_id"] = self.task["tag_id"]
+        if task.get(CONF_TAG_ID):
+            self._attr_extra_state_attributes["tag_id"] = task[CONF_TAG_ID]
 
     async def async_update(self) -> None:
-        """Get the latest state of the sensor."""
+        """Recompute the state: a task becomes due as days pass."""
         self._update_state()
-
-    async def async_added_to_hass(self) -> None:
-        """Run when entity is added to Home Assistant."""
-        if self._labels:
-            registry = er.async_get(self.hass)
-            if registry.async_get(self.entity_id):
-                registry.async_update_entity(self.entity_id, labels=set(self._labels))
