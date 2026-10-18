@@ -78,8 +78,11 @@ Each task is a device (a "service" on the integration page) with these entities:
 
 - `binary_sensor.<task>`: `on` when the task is due. Its attributes give `last_performed`, `next_due`, `interval_value`, `interval_type` and `enabled`, plus `runtime_entity`, `runtime_limit`, `runtime_remaining` (%) and `runtime_left` (hours) for a task with a runtime limit.
 - `sensor.<task>_last_done`: the date the task was last done.
-- `sensor.<task>_next_due`: the date the task is next due, for a task with an interval.
-- `sensor.<task>_remaining`: the percentage of the runtime limit left, for a task with one. Its attributes give `hours_used` and `hours_limit`.
+- `sensor.<task>_next_due`: the date the task is next due, unknown for a task without an interval.
+- For a task with a runtime limit:
+  - `sensor.<task>_remaining`: the percentage of the hours left. Its attributes give `hours_used` and `hours_limit`.
+  - `sensor.<task>_hours_left`: the hours left.
+  - `sensor.<task>_lifespan`: the runtime limit, in hours.
 - `button.<task>_mark_done`: press it to mark the task done today.
 
 You can also mark tasks done from the [dashboard card](#-dashboard-card), the [`reset_last_performed` action](#-available-actions) or the task's NFC tag. The integration is available in English, French and German.

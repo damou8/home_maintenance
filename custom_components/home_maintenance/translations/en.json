@@ -162,6 +162,12 @@
             "name": "Lifespan"
           }
         }
+      },
+      "hours_left": {
+        "name": "Hours left"
+      },
+      "lifespan": {
+        "name": "Lifespan"
       }
     }
   },

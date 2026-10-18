@@ -162,6 +162,12 @@
             "name": "Durée de vie"
           }
         }
+      },
+      "hours_left": {
+        "name": "Heures restantes"
+      },
+      "lifespan": {
+        "name": "Durée de vie"
       }
     }
   },

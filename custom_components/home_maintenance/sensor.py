@@ -5,7 +5,7 @@ from typing import ClassVar
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry, ConfigSubentry
-from homeassistant.const import PERCENTAGE, Platform
+from homeassistant.const import PERCENTAGE, Platform, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -13,7 +13,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import CONF_LAST_PERFORMED, CONF_RUNTIME_HOURS, DOMAIN
 from .entity import HomeMaintenanceEntity
-from .tasks import compute_next_due, has_interval, has_runtime, iter_tasks, task_id
+from .tasks import compute_next_due, has_runtime, iter_tasks, task_id
 
 
 async def async_setup_entry(
@@ -24,16 +24,16 @@ async def async_setup_entry(
     """Set up the sensors of each task."""
     ent_reg = er.async_get(hass)
     for subentry in iter_tasks(entry):
-        sensors: list[TaskSensor] = [LastPerformedSensor(entry, subentry)]
-        # The other sensors only exist for the limits the task has
-        for sensor_class, applies in (
-            (NextDueSensor, has_interval(subentry.data)),
-            (RemainingSensor, has_runtime(subentry.data)),
-        ):
-            if applies:
+        sensors: list[TaskSensor] = [
+            LastPerformedSensor(entry, subentry),
+            NextDueSensor(entry, subentry),
+        ]
+        # The runtime sensors only exist for a task with a runtime limit
+        for sensor_class in RUNTIME_SENSORS:
+            if has_runtime(subentry.data):
                 sensors.append(sensor_class(entry, subentry))
                 continue
-            # Remove the one left over from before the task was changed
+            # Remove the one left over from before the limit was removed
             unique_id = f"{task_id(subentry)}_{sensor_class.key}"
             if entity_id := ent_reg.async_get_entity_id(
                 Platform.SENSOR, DOMAIN, unique_id
@@ -72,7 +72,7 @@ class LastPerformedSensor(TaskSensor):
 
 
 class NextDueSensor(TaskSensor):
-    """The day the task is next due."""
+    """The day the task is next due, unknown for a task without an interval."""
 
     _attr_device_class = SensorDeviceClass.DATE
     key = "next_due"
@@ -99,3 +99,40 @@ class RemainingSensor(TaskSensor):
             "hours_used": round(runtime.used_hours(self._task_id), 1),
             "hours_limit": self._task_data[CONF_RUNTIME_HOURS],
         }
+
+
+class HoursLeftSensor(TaskSensor):
+    """The hours of runtime left before the task is due."""
+
+    key = "hours_left"
+    _attr_device_class = SensorDeviceClass.DURATION
+    _attr_native_unit_of_measurement = UnitOfTime.HOURS
+    _attr_suggested_display_precision = 1
+    _follows_runtime = True
+
+    def _update_state(self) -> None:
+        runtime = self._entry.runtime_data.runtime
+        left = max(
+            0.0, self._task_data[CONF_RUNTIME_HOURS] - runtime.used_hours(self._task_id)
+        )
+        # One decimal, rounded up like Remaining (after removing float noise)
+        self._attr_native_value = math.ceil(round(left * 10, 6)) / 10
+
+
+class LifespanSensor(TaskSensor):
+    """The task's runtime limit, in hours."""
+
+    key = "lifespan"
+    _attr_device_class = SensorDeviceClass.DURATION
+    _attr_native_unit_of_measurement = UnitOfTime.HOURS
+    _attr_suggested_display_precision = 0
+
+    def _update_state(self) -> None:
+        self._attr_native_value = self._task_data[CONF_RUNTIME_HOURS]
+
+
+RUNTIME_SENSORS: tuple[type[TaskSensor], ...] = (
+    RemainingSensor,
+    HoursLeftSensor,
+    LifespanSensor,
+)

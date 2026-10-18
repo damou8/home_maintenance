@@ -1,6 +1,6 @@
 # Home Maintenance
 
-Home Assistant custom integration (domain `home_maintenance`), installed through HACS. It tracks recurring tasks. Each task is a config subentry, managed from the integration's page with HA's own forms. A task is due after a calendar interval, a runtime limit (hours while an entity is on), or whichever comes first. It's shown as a device with a `binary_sensor` that turns `on` when the task is due, date `sensor`s (last done, next due), a Remaining `sensor` for a runtime limit and a "Mark done" `button`. The integration also has a dashboard card and sends daily notifications for due tasks.
+Home Assistant custom integration (domain `home_maintenance`), installed through HACS. It tracks recurring tasks. Each task is a config subentry, managed from the integration's page with HA's own forms. A task is due after a calendar interval, a runtime limit (hours while an entity is on), or whichever comes first. It's shown as a device with a `binary_sensor` that turns `on` when the task is due, date `sensor`s (last done, next due), Remaining, Hours left and Lifespan `sensor`s for a runtime limit, and a "Mark done" `button`. The integration also has a dashboard card and sends daily notifications for due tasks.
 
 Fork of TJPoorman/home_maintenance, maintained at github.com/damou8/home_maintenance. Minimum Home Assistant version: 2026.9 (`hacs.json`), the first release that uses `probatio` instead of `voluptuous`.
 
@@ -14,7 +14,7 @@ custom_components/home_maintenance/
   runtime.py         RuntimeTracker: hours each runtime entity was on, saved in .storage/home_maintenance.runtime
   entity.py          base entity: one device per task
   binary_sensor.py   on when the task is due
-  sensor.py          last done and next due dates, runtime left
+  sensor.py          last done and next due dates; runtime left (%, hours) and lifespan
   button.py          Mark done
   notifications.py   TaskNotifier: daily notify.send_message, runtime warnings as they happen; messages in en/fr/de
   migration.py       1.x storage file -> subentries (config entry version 1 -> 2)

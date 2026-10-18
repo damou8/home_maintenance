@@ -105,8 +105,11 @@ async def test_counts_only_while_on(
     assert entry.subentries[subentry_id].data["interval_value"] is None
     assert remaining(hass) == 100
     # No interval: no due date, and not due by date
-    assert hass.states.get("sensor.ac_filter_next_due") is None
+    assert hass.states.get("sensor.ac_filter_next_due").state == "unknown"
     assert hass.states.get("binary_sensor.ac_filter").state == "off"
+    lifespan = hass.states.get("sensor.ac_filter_lifespan")
+    assert lifespan.state == "100"
+    assert lifespan.attributes["unit_of_measurement"] == "h"
 
     hass.states.async_set(AC, "cool")
     await run(hass, freezer, 20)
@@ -119,6 +122,9 @@ async def test_counts_only_while_on(
         "unit_of_measurement": "%",
         "friendly_name": "AC filter Remaining",
     }
+    hours_left = hass.states.get("sensor.ac_filter_hours_left")
+    assert hours_left.state == "75.0"
+    assert hours_left.attributes["device_class"] == "duration"
 
     for state in ("off", "unavailable", "unknown"):
         hass.states.async_set(AC, state)
@@ -251,25 +257,27 @@ async def test_change_form_corrects_hours(
     assert remaining(hass) == 50
 
 
-async def test_removed_limits_remove_their_sensor(
+async def test_removed_runtime_limit_removes_its_sensors(
     hass: HomeAssistant, setup_integration
 ) -> None:
-    """Remaining goes with the runtime limit, Next due with the interval."""
+    """The runtime sensors go with the runtime limit; Next due always stays."""
     entry = setup_integration
     ent_reg = er.async_get(hass)
+    runtime_sensors = [
+        f"sensor.ac_filter_{key}" for key in ("remaining", "hours_left", "lifespan")
+    ]
     subentry_id = await add_task(hass, entry, "AC filter", 30, 0, **limit())
-    assert ent_reg.async_get("sensor.ac_filter_remaining")
-    assert ent_reg.async_get("sensor.ac_filter_next_due")
+    assert all(ent_reg.async_get(entity_id) for entity_id in runtime_sensors)
 
     await update_task(hass, entry, subentry_id, runtime_entity=None)
-    assert ent_reg.async_get("sensor.ac_filter_remaining") is None
+    assert not any(ent_reg.async_get(entity_id) for entity_id in runtime_sensors)
     assert (
         "runtime_remaining" not in hass.states.get("binary_sensor.ac_filter").attributes
     )
 
     await update_task(hass, entry, subentry_id, runtime_entity=AC, interval_value=None)
-    assert ent_reg.async_get("sensor.ac_filter_next_due") is None
-    assert ent_reg.async_get("sensor.ac_filter_remaining")
+    assert all(ent_reg.async_get(entity_id) for entity_id in runtime_sensors)
+    assert hass.states.get("sensor.ac_filter_next_due").state == "unknown"
 
 
 async def test_notifications(
