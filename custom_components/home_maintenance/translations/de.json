@@ -24,7 +24,8 @@
         "data_description": {
           "notify_targets": "Standard-Benachrichtigungsziele (z. B. deine Handys). Eine Aufgabe kann dies überschreiben.",
           "notify_days_before": "0 deaktiviert die Erinnerung. Am Fälligkeitstag wird immer benachrichtigt.",
-          "notify_runtime_threshold": "Warnt einmal, wenn eine Aufgabe mit Laufzeitlimit nur noch so viel übrig hat. 0 deaktiviert sie. Eine Aufgabe kann dies überschreiben."
+          "notify_runtime_threshold": "Warnt einmal, wenn eine Aufgabe mit Laufzeitlimit nur noch so viel übrig hat. 0 deaktiviert sie. Eine Aufgabe kann dies überschreiben.",
+          "notify_overdue": "Wiederholt auch die Benachrichtigung einer Aufgabe, deren Laufzeitlimit erreicht ist."
         }
       }
     }
@@ -193,6 +194,12 @@
   "exceptions": {
     "not_a_task": {
       "message": "{entity_id} ist keine Home-Maintenance-Aufgabe."
+    }
+  },
+  "issues": {
+    "missing_runtime_entity": {
+      "title": "Laufzeit-Entität für {task} fehlt",
+      "description": "Die Aufgabe **{task}** zählt ihre Laufzeit, solange `{entity_id}` eingeschaltet ist, aber diese Entität existiert nicht mehr. Sie wurde vielleicht umbenannt oder entfernt.\n\nÄndere die Aufgabe, um eine andere Entität zu wählen. Bis dahin wird ihre Laufzeit nicht gezählt."
     }
   },
   "services": {

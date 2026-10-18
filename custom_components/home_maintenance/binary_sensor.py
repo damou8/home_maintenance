@@ -1,7 +1,5 @@
 """Binary sensors that turn on when a task is due."""
 
-import math
-
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.core import HomeAssistant
@@ -20,6 +18,7 @@ from .const import (
     DEFAULT_ICON,
 )
 from .entity import HomeMaintenanceEntity
+from .runtime import round_up
 from .tasks import compute_next_due, has_interval, iter_tasks
 
 
@@ -78,14 +77,11 @@ class HomeMaintenanceSensor(HomeMaintenanceEntity, BinarySensorEntity):
         if task.get(CONF_TAG_ID):
             self._attr_extra_state_attributes["tag_id"] = task[CONF_TAG_ID]
         if counted:
-            limit = task[CONF_RUNTIME_HOURS]
-            used = runtime.used_hours(self._task_id)
-            # Rounded up, so they only read 0 once the limit is reached
             self._attr_extra_state_attributes |= {
                 "runtime_entity": task[CONF_RUNTIME_ENTITY],
-                "runtime_limit": limit,
-                "runtime_remaining": math.ceil(runtime.remaining(self._task_id)),
-                "runtime_left": max(0, math.ceil(limit - used)),
+                "runtime_limit": task[CONF_RUNTIME_HOURS],
+                "runtime_remaining": int(round_up(runtime.remaining(self._task_id))),
+                "runtime_left": int(round_up(runtime.hours_left(self._task_id))),
             }
 
     async def async_update(self) -> None:

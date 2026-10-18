@@ -24,7 +24,7 @@ from .const import (
 from .entity import HomeMaintenanceEntity
 from .migration import async_migrate_v1
 from .notifications import TaskNotifier
-from .runtime import RuntimeTracker, async_remove_runtime_store
+from .runtime import RuntimeTracker, async_remove_runtime_data
 from .tasks import async_mark_done, iter_tasks
 
 _LOGGER = logging.getLogger(__name__)
@@ -115,8 +115,8 @@ async def async_unload_entry(
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:  # noqa: ARG001
-    """Delete the runtime counters when the integration is removed."""
-    await async_remove_runtime_store(hass)
+    """Delete the runtime counters and issues when the integration is removed."""
+    await async_remove_runtime_data(hass)
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

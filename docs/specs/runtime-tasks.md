@@ -28,6 +28,7 @@ The hours used are state, not configuration, so they aren't stored in the subent
 - **Marking done** (button, action, NFC tag) resets the counter to 0, through `async_mark_done()`. This also works when the task is marked done twice on the same day.
 - **Hours already used**: the add form takes the current usage of an item that isn't new. The change form shows the hours counted so far, and changing that number corrects the counter.
 - **Removed tasks** lose their counter at the next setup. Removing the integration deletes the file.
+- **Missing entity:** if the counted entity is renamed or removed from the entity registry, or doesn't exist once HA has started, the task gets a repair issue (`missing_runtime_entity_<task_id>`). The issue goes away when the entity exists again, when the task is changed or deleted, and when the integration is removed. Entities that disappear only from the state machine, as during their integration's reload, don't raise it.
 
 `remaining = max(0, 100 × (1 − used / runtime_hours))`.
 
@@ -61,7 +62,7 @@ The lifespan is ignored when the entity is cleared, so clearing the entity remov
 | Next due `sensor` | always | unchanged; unknown for a task without an interval |
 | **Interval `sensor`** (new) | the task has an interval | the interval as text in HA's language, such as `3 months` or `3 mois`. Home Assistant only takes translated units from English, so the unit is in the state rather than a unit of measurement. |
 | **Remaining `sensor`** (new) | the task has a runtime limit | `%` left, 1 decimal, shown without decimals. Attributes `hours_used` and `hours_limit`. |
-| **Hours left `sensor`** (new) | the task has a runtime limit | hours left (duration), 1 decimal, rounded up |
+| **Hours left `sensor`** (new) | the task has a runtime limit | hours left (duration), 1 decimal, rounded up. No display precision: the frontend formats durations itself ("186h 24min"). |
 | **Lifespan `sensor`** (new) | the task has a runtime limit | the runtime limit in hours (duration) |
 
 The due binary sensor gets new attributes, which the card reads:
@@ -71,12 +72,12 @@ The due binary sensor gets new attributes, which the card reads:
 - `runtime_remaining`: %, rounded up
 - `runtime_left`: hours, rounded up
 
-Both are rounded up so they only show 0 when the limit is reached. A limit's sensors are removed from the entity registry when the limit is removed: Interval with the interval, the runtime sensors with the runtime limit.
+Both are rounded up so they only show 0 when the limit is reached. Hours left and the remaining percentage come from `RuntimeTracker.hours_left()` and `remaining()`, and every displayed value goes through `round_up()`, which removes float noise first. A limit's sensors are removed from the entity registry when the limit is removed: Interval with the interval, the runtime sensors with the runtime limit.
 
 ## Notifications
 
 - **Preventive (runtime):** sent once, as soon as the remaining percentage drops below the task's threshold, to the task's targets. The tracker compares each new value with the previous one, so a restart or a threshold change doesn't send it again.
-- **0% (runtime):** sent as soon as it's reached. The daily run at the notify time repeats it every morning until the task is marked done.
+- **0% (runtime):** sent as soon as it's reached. If **Repeat daily while overdue** is on, the daily run at the notify time repeats it every morning until the task is marked done.
 - **Dates:** unchanged. A task due by runtime gets the runtime message in the daily run instead of the date one, so it gets one notification per morning.
 - Disabled tasks and tasks with notifications set to none send nothing. The counter still runs, but a disabled task is never due.
 

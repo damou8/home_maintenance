@@ -24,7 +24,8 @@
         "data_description": {
           "notify_targets": "Default notification targets (e.g. your phones). A task can override this.",
           "notify_days_before": "0 disables the reminder. A notification is always sent on the due date.",
-          "notify_runtime_threshold": "Warns once when a task with a runtime limit has this much left. 0 disables it. A task can override this."
+          "notify_runtime_threshold": "Warns once when a task with a runtime limit has this much left. 0 disables it. A task can override this.",
+          "notify_overdue": "Also repeats the notification of a task whose runtime limit is reached."
         }
       }
     }
@@ -193,6 +194,12 @@
   "exceptions": {
     "not_a_task": {
       "message": "{entity_id} is not a Home Maintenance task."
+    }
+  },
+  "issues": {
+    "missing_runtime_entity": {
+      "title": "Runtime entity of {task} is missing",
+      "description": "The task **{task}** counts its runtime while `{entity_id}` is on, but that entity no longer exists. It may have been renamed or removed.\n\nChange the task to choose another entity. Until then, its runtime isn't counted."
     }
   },
   "services": {

@@ -1,6 +1,5 @@
 """Sensors of a task: when it was last done, when it's due, how much runtime is left."""
 
-import math
 from collections.abc import Callable, Mapping
 from typing import Any, ClassVar
 
@@ -20,6 +19,7 @@ from .const import (
     DOMAIN,
 )
 from .entity import HomeMaintenanceEntity
+from .runtime import round_up
 from .tasks import (
     compute_next_due,
     ha_language,
@@ -143,8 +143,7 @@ class RemainingSensor(TaskSensor):
 
     def _update_state(self) -> None:
         runtime = self._entry.runtime_data.runtime
-        # One decimal, rounded up so it only reads 0 once the limit is reached
-        self._attr_native_value = math.ceil(runtime.remaining(self._task_id) * 10) / 10
+        self._attr_native_value = round_up(runtime.remaining(self._task_id), 1)
         self._attr_extra_state_attributes = {
             "hours_used": round(runtime.used_hours(self._task_id), 1),
             "hours_limit": self._task_data[CONF_RUNTIME_HOURS],
@@ -155,18 +154,14 @@ class HoursLeftSensor(TaskSensor):
     """The hours of runtime left before the task is due."""
 
     key = "hours_left"
+    # No display precision: the frontend shows durations its own way ("186h 24min")
     _attr_device_class = SensorDeviceClass.DURATION
     _attr_native_unit_of_measurement = UnitOfTime.HOURS
-    _attr_suggested_display_precision = 1
     _follows_runtime = True
 
     def _update_state(self) -> None:
         runtime = self._entry.runtime_data.runtime
-        left = max(
-            0.0, self._task_data[CONF_RUNTIME_HOURS] - runtime.used_hours(self._task_id)
-        )
-        # One decimal, rounded up like Remaining (after removing float noise)
-        self._attr_native_value = math.ceil(round(left * 10, 6)) / 10
+        self._attr_native_value = round_up(runtime.hours_left(self._task_id), 1)
 
 
 class LifespanSensor(TaskSensor):
@@ -175,7 +170,6 @@ class LifespanSensor(TaskSensor):
     key = "lifespan"
     _attr_device_class = SensorDeviceClass.DURATION
     _attr_native_unit_of_measurement = UnitOfTime.HOURS
-    _attr_suggested_display_precision = 0
 
     def _update_state(self) -> None:
         self._attr_native_value = self._task_data[CONF_RUNTIME_HOURS]

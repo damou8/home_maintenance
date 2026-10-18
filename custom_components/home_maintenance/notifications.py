@@ -1,7 +1,6 @@
 """Send notifications for due Home Maintenance tasks."""
 
 import logging
-import math
 from collections.abc import Callable, Mapping
 from datetime import datetime
 from typing import Any
@@ -13,6 +12,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.util import dt as dt_util
 
 from . import const
+from .runtime import round_up
 from .tasks import compute_next_due, ha_language, iter_tasks, task_id
 
 _LOGGER = logging.getLogger(__name__)
@@ -120,20 +120,26 @@ class TaskNotifier:
             )
         return int(threshold)
 
-    def _runtime_message(
-        self, subentry: ConfigSubentry, remaining: float
-    ) -> tuple[str, str]:
-        """Return (title, message) about a task's runtime."""
+    @property
+    def _repeat_overdue(self) -> bool:
+        """Return whether due tasks are notified again every day."""
+        return self._options.get(
+            const.CONF_NOTIFY_OVERDUE, const.DEFAULT_NOTIFY_OVERDUE
+        )
+
+    def _runtime_message(self, subentry: ConfigSubentry) -> tuple[str, str]:
+        """Return (title, message) about a task's runtime, as it is now."""
+        runtime = self.entry.runtime_data.runtime
+        tid = task_id(subentry)
         texts = self._texts()
-        limit = subentry.data[const.CONF_RUNTIME_HOURS]
-        if remaining <= 0:
+        if (remaining := runtime.remaining(tid)) <= 0:
             return texts["due_title"], texts["runtime_over"].format(
-                task=subentry.title, hours=limit
+                task=subentry.title, hours=subentry.data[const.CONF_RUNTIME_HOURS]
             )
         return texts["reminder_title"], texts["runtime_low"].format(
             task=subentry.title,
-            pct=math.ceil(remaining),
-            hours=math.ceil(limit * remaining / 100),
+            pct=int(round_up(remaining)),
+            hours=int(round_up(runtime.hours_left(tid))),
         )
 
     @callback
@@ -148,7 +154,7 @@ class TaskNotifier:
             return
         self.entry.async_create_task(
             self.hass,
-            self._async_send(subentry, *self._runtime_message(subentry, remaining)),
+            self._async_send(subentry, *self._runtime_message(subentry)),
         )
 
     def _message_for(self, title: str, days_left: int) -> tuple[str, str] | None:
@@ -159,9 +165,6 @@ class TaskNotifier:
                 const.CONF_NOTIFY_DAYS_BEFORE, const.DEFAULT_NOTIFY_DAYS_BEFORE
             )
         )
-        overdue = self._options.get(
-            const.CONF_NOTIFY_OVERDUE, const.DEFAULT_NOTIFY_OVERDUE
-        )
         if days_left > 0:
             if days_left != days_before:
                 return None
@@ -171,7 +174,7 @@ class TaskNotifier:
             )
         if days_left == 0:
             return texts["due_title"], texts["due_today"].format(task=title)
-        if not overdue:
+        if not self._repeat_overdue:
             return None
         key = "overdue_one" if days_left == -1 else "overdue_days"
         return texts["due_title"], texts[key].format(task=title, days=-days_left)
@@ -182,9 +185,12 @@ class TaskNotifier:
         runtime = self.entry.runtime_data.runtime
         for subentry in iter_tasks(self.entry):
             tid = task_id(subentry)
-            # Out of runtime: that's the task's one reminder, whatever its date
+            # Out of runtime: repeated like an overdue task, instead of its date
+            # reminders. It was already notified when the runtime ran out.
             if runtime.has_task(tid) and runtime.remaining(tid) <= 0:
-                message = self._runtime_message(subentry, 0)
+                message = (
+                    self._runtime_message(subentry) if self._repeat_overdue else None
+                )
             elif (due := compute_next_due(subentry.data)) is not None:
                 message = self._message_for(subentry.title, (due.date() - today).days)
             else:

@@ -13,6 +13,7 @@ from homeassistant.const import (
 from homeassistant.core import CoreState, HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import issue_registry as ir
 from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed,
     async_mock_service,
@@ -389,3 +390,95 @@ async def test_thresholds(
     await run(hass, freezer, 30)
     assert hass.states.get("binary_sensor.paused").state == "off"
     assert "Paused" not in str([c.data for c in notify_calls])
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        {
+            "notify_targets": ["notify.phone_a"],
+            "notify_time": "09:00:00",
+            "notify_days_before": 1,
+            "notify_overdue": False,
+        }
+    ],
+)
+async def test_no_daily_repeat_without_overdue_option(
+    hass: HomeAssistant,
+    setup_integration,
+    freezer: FrozenDateTimeFactory,
+    notify_calls,
+) -> None:
+    """With overdue repeats off, running out is notified once, not every morning."""
+    hass.states.async_set(AC, "cool")
+    await add_filter(hass, setup_integration, **limit(10))
+    await run(hass, freezer, 11)
+    # Crossing the threshold and 0 at once: one notification
+    assert [c.data["message"] for c in notify_calls] == [
+        "The task 'AC filter' reached its 10 hours of runtime!"
+    ]
+
+    notify_calls.clear()
+    await hass.services.async_call(DOMAIN, "send_notifications", blocking=True)
+    assert notify_calls == []
+
+
+def issue(hass: HomeAssistant, entry, subentry_id: str) -> ir.IssueEntry | None:
+    """Return the missing-entity repair issue of a task."""
+    task_id = entry.subentries[subentry_id].unique_id
+    return ir.async_get(hass).async_get_issue(
+        DOMAIN, f"missing_runtime_entity_{task_id}"
+    )
+
+
+async def test_missing_entity_repair_issue(
+    hass: HomeAssistant, setup_integration
+) -> None:
+    """A repair issue tells when the counted entity is renamed, removed or missing."""
+    entry = setup_integration
+    ent_reg = er.async_get(hass)
+    ent_reg.async_get_or_create(
+        "climate", "test", "ac", suggested_object_id="living_room"
+    )
+    hass.states.async_set(AC, "cool")
+    ac_task = await add_filter(hass, entry)
+    assert issue(hass, entry, ac_task) is None
+
+    # Renamed, which also moves its state: the task still counts the old ID
+    ent_reg.async_update_entity(AC, new_entity_id="climate.salon")
+    hass.states.async_remove(AC)
+    await hass.async_block_till_done()
+    found = issue(hass, entry, ac_task)
+    assert found.translation_placeholders == {"task": "AC filter", "entity_id": AC}
+    # Back under its old ID
+    hass.states.async_set(AC, "cool")
+    await hass.async_block_till_done()
+    assert issue(hass, entry, ac_task) is None
+
+    # Removed, then created again
+    ent_reg.async_get_or_create(
+        "switch", "test", "dh", suggested_object_id="dehumidifier"
+    )
+    dh_task = await add_filter(
+        hass, entry, "Dehumidifier filter", **limit(entity="switch.dehumidifier")
+    )
+    ent_reg.async_remove("switch.dehumidifier")
+    await hass.async_block_till_done()
+    assert issue(hass, entry, dh_task)
+    ent_reg.async_get_or_create(
+        "switch", "test", "dh", suggested_object_id="dehumidifier"
+    )
+    await hass.async_block_till_done()
+    assert issue(hass, entry, dh_task) is None
+
+    # Missing from the start, then the task is deleted
+    fan_task = await add_filter(
+        hass, entry, "Fan filter", **limit(entity="fan.nothing")
+    )
+    assert issue(hass, entry, fan_task)
+    task_id = entry.subentries[fan_task].unique_id
+    assert hass.config_entries.async_remove_subentry(entry, fan_task)
+    await hass.async_block_till_done()
+    assert not ir.async_get(hass).async_get_issue(
+        DOMAIN, f"missing_runtime_entity_{task_id}"
+    )

@@ -24,7 +24,8 @@
         "data_description": {
           "notify_targets": "Destinataires des notifications par défaut (ex. vos téléphones). Chaque tâche peut le remplacer.",
           "notify_days_before": "0 désactive le rappel. Une notification est toujours envoyée le jour de l'échéance.",
-          "notify_runtime_threshold": "Prévient une fois quand une tâche avec une limite d'utilisation n'a plus que ce pourcentage. 0 la désactive. Chaque tâche peut le remplacer."
+          "notify_runtime_threshold": "Prévient une fois quand une tâche avec une limite d'utilisation n'a plus que ce pourcentage. 0 la désactive. Chaque tâche peut le remplacer.",
+          "notify_overdue": "Répète aussi la notification d'une tâche dont la limite d'utilisation est atteinte."
         }
       }
     }
@@ -193,6 +194,12 @@
   "exceptions": {
     "not_a_task": {
       "message": "{entity_id} n'est pas une tâche Home Maintenance."
+    }
+  },
+  "issues": {
+    "missing_runtime_entity": {
+      "title": "Entité d'utilisation introuvable pour {task}",
+      "description": "La tâche **{task}** compte son utilisation tant que `{entity_id}` est allumée, mais cette entité n'existe plus. Elle a peut-être été renommée ou supprimée.\n\nModifiez la tâche pour choisir une autre entité. En attendant, son utilisation n'est pas comptée."
     }
   },
   "services": {

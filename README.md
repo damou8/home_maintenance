@@ -96,7 +96,9 @@ Some things wear with use rather than time: an air conditioner's filter, a dehum
 - **Lifespan**: the hours of use before the task is due.
 - **Hours used**: when adding a task for an item that isn't new, the hours it has already been used. When changing a task, the hours counted so far, which you can correct.
 
-The task is due when the hours run out. With an interval too, it's due at whichever comes first: “every year or after 300 hours”. Marking the task done resets the hours. They're saved across restarts, and time while Home Assistant is off isn't counted.
+The task is due when the hours run out. With an interval too, it's due at whichever comes first: “every year or after 300 hours”. Marking the task done resets the hours to 0. That's also the case when the [`reset_last_performed` action](#-available-actions) is given a past date, since the use since then isn't known. The hours are saved across restarts, and time while Home Assistant is off isn't counted.
+
+If the counted entity is renamed or removed, a repair in **Settings → System → Repairs** tells you, since the task can no longer count its runtime. Change the task to pick the entity again.
 
 ### ⬆️ Upgrading from 1.x
 
@@ -123,7 +125,7 @@ Home Maintenance can notify your phones when tasks are due, no automation needed
 Tasks with a [runtime limit](#runtime-limits) are also notified about their hours, as soon as it happens rather than at the notification time:
 
 - once, when the share of hours left drops below the **Runtime warning** (10% by default, `0` to turn it off). Set it in **Configure**, and override it in a task's **Notifications** section.
-- when the hours run out. The daily notification then repeats it until the task is done, instead of the date reminders.
+- when the hours run out. If **Repeat daily while overdue** is on, the daily notification then repeats it until the task is done, instead of the date reminders.
 
 Messages are sent with `notify.send_message` in Home Assistant's language (English, French and German included).
 

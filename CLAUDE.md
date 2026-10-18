@@ -60,7 +60,7 @@ scripts/setup && scripts/develop
 - **Keep workflow actions current by hand.** There's no Dependabot. Actions use floating major tags (`actions/checkout@v7`), and the hassfest and HACS validators follow `master`/`main`, as their docs recommend. Move to a new major version when GitHub warns about a deprecated runtime.
 - **Test behaviour changes.** Add a pytest for each bug fix and new feature, and drive the integration the way users do: the task forms (`add_task()` in `tests/conftest.py` goes through the real flow), actions, buttons, the options flow.
 - **Stay backward compatible with stored tasks.** Read a new task field with `.get()` and a default, since existing subentries don't have it. Add it to the task form in `config_flow.py` (`_task_schema`, `_form_values`, `_parse_task_input`) and to the translations. A change in the stored format needs a new config entry version and a step in `async_migrate_entry`, with a test.
-- **Keep one source of truth.** Due dates come from `compute_next_due()`, and marking done goes through `async_mark_done()`. Keys and defaults live in `const.py`. Don't duplicate them.
+- **Keep one source of truth.** Due dates come from `compute_next_due()`, runtime from `RuntimeTracker` (`remaining()`, `hours_left()`), and marking done goes through `async_mark_done()`. Keys and defaults live in `const.py`. Don't duplicate them.
 - **Keep strings complete in all languages.** User-facing text goes in every language file that covers it:
   - integration UI (forms, entities, actions, errors): `translations/*.json`
   - card: `frontend/src/strings.ts`
@@ -95,7 +95,7 @@ These have all bitten before:
 - **Service targets.** `reset_last_performed` takes `entity_id` as a list (`cv.entity_ids`) because dashboard actions send a target.
 - **`_attr_*` class attributes become properties.** HA's entity metaclass turns `_attr_translation_key` and friends into properties on the class, so `SomeEntity._attr_translation_key` returns a property object. Read such values from an instance, or keep them in a plain class attribute (`TaskSensor.key`).
 - **Translated units are English only.** Home Assistant reads `entity.sensor.<key>.unit_of_measurement` from the English translations whatever the language. That's why the Interval sensor's state is text ("3 mois") from `INTERVAL_TEXTS`, rather than a number with a translated unit.
-- **Float noise in percentages.** `100 * (1 - 70 / 100)` is `30.000000000000004`, which isn't `<= 30`. `RuntimeTracker.remaining()` rounds to 6 decimals before thresholds and `math.ceil` see it.
+- **Float noise.** `100 * (1 - 70 / 100)` is `30.000000000000004`, which isn't `<= 30`. `RuntimeTracker.remaining()` rounds to 6 decimals before thresholds see it, and displayed values go through `round_up()` in `runtime.py` rather than a bare `math.ceil`.
 - **Delayed saves postpone.** `Store.async_delay_save()` moves a pending write to the latest requested time, so calling it on every tick never writes. The tracker only asks for a save on changes and every 10 minutes.
 
 ## Working on the maintainer's Home Assistant
