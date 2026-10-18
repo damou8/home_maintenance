@@ -23,7 +23,11 @@ interface TaskItem {
     due: boolean;
     enabled: boolean;
     next?: Date;
+    // Share of the interval left, 100 for a task without one
     pct: number;
+    // Runtime limit: share of the hours left, and hours left
+    runtimePct?: number;
+    runtimeLeft?: number;
 }
 
 const DEFAULT_WARNING_THRESHOLD = 15;
@@ -95,6 +99,7 @@ class HomeMaintenanceCard extends LitElement {
 
             const [y, m, d] = String(attrs.next_due ?? "").slice(0, 10).split("-").map(Number);
             const nextDate = y && m && d ? new Date(y, m - 1, d) : undefined;
+            const hasRuntime = typeof attrs.runtime_remaining === "number";
 
             items.push({
                 entity_id: entry.entity_id,
@@ -104,6 +109,8 @@ class HomeMaintenanceCard extends LitElement {
                 enabled,
                 next: nextDate,
                 pct,
+                runtimePct: hasRuntime ? attrs.runtime_remaining : undefined,
+                runtimeLeft: hasRuntime ? attrs.runtime_left : undefined,
             });
         }
 
@@ -130,7 +137,9 @@ class HomeMaintenanceCard extends LitElement {
     private _color(task: TaskItem): string {
         if (!task.enabled) return COLORS.disabled;
         if (task.due) return COLORS.due;
-        if (task.pct <= (this._config?.warning_threshold ?? DEFAULT_WARNING_THRESHOLD)) return COLORS.soon;
+        // Soon by date or by runtime, whichever is lower
+        const pct = Math.min(task.pct, task.runtimePct ?? 100);
+        if (pct <= (this._config?.warning_threshold ?? DEFAULT_WARNING_THRESHOLD)) return COLORS.soon;
         return COLORS.ok;
     }
 
@@ -209,9 +218,16 @@ class HomeMaintenanceCard extends LitElement {
         `;
     }
 
-    private _renderTask(task: TaskItem) {
+    // Date tasks show the next due date, runtime tasks the share of hours left
+    private _secondary(task: TaskItem): string {
         const language = this.hass!.language;
         const date = task.next ? formatDateNumeric(task.next, (this.hass as any).locale) : t(language, "unknown");
+        if (task.runtimePct === undefined) return t(language, "next", { date, pct: task.pct });
+        if (!task.next) return t(language, "runtime", { pct: task.runtimePct, hours: task.runtimeLeft ?? 0 });
+        return t(language, "next_runtime", { date, pct: task.runtimePct });
+    }
+
+    private _renderTask(task: TaskItem) {
         return html`
             <ha-card
                 class="task ${task.enabled ? "" : "disabled"}"
@@ -231,7 +247,7 @@ class HomeMaintenanceCard extends LitElement {
                     </div>
                     <div class="info">
                         <span class="primary">${task.name}</span>
-                        <span class="secondary">${t(language, "next", { date, pct: task.pct })}</span>
+                        <span class="secondary">${this._secondary(task)}</span>
                     </div>
                 </div>
             </ha-card>

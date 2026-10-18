@@ -59,24 +59,28 @@ async def add_task(
     hass: HomeAssistant,
     entry: ConfigEntry,
     title: str,
-    interval_days: int = 7,
+    interval_days: int | None = 7,
     done_days_ago: int = 0,
     **fields: Any,
 ) -> str:
     """Add a task through the Add task flow, return its subentry ID."""
+    # With interval_days None the task has no interval: the form sends no value
+    data = {
+        "title": title,
+        "interval_value": interval_days,
+        "interval_type": "days",
+        "last_performed": days_ago(done_days_ago),
+        "runtime": {},
+        "notifications": {"notify_mode": "default"},
+        **fields,
+    }
+    if interval_days is None:
+        del data["interval_value"]
     result = await hass.config_entries.subentries.async_init(
         (entry.entry_id, "task"), context={"source": SOURCE_USER}
     )
     result = await hass.config_entries.subentries.async_configure(
-        result["flow_id"],
-        {
-            "title": title,
-            "interval_value": interval_days,
-            "interval_type": "days",
-            "last_performed": days_ago(done_days_ago),
-            "notifications": {"notify_mode": "default"},
-            **fields,
-        },
+        result["flow_id"], data
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY, result
     await hass.async_block_till_done()

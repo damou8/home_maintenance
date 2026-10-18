@@ -13,8 +13,15 @@ from .const import (
     CONF_INTERVAL_TYPE,
     CONF_INTERVAL_VALUE,
     CONF_LAST_PERFORMED,
+    CONF_RUNTIME_ENTITY,
+    CONF_RUNTIME_HOURS,
     SUBENTRY_TASK,
 )
+
+
+def ha_language(hass: HomeAssistant) -> str:
+    """Return Home Assistant's language, without its region ("fr" for "fr-CA")."""
+    return (hass.config.language or "en").split("-")[0]
 
 
 def start_of_day_iso(day: date | None = None) -> str:
@@ -22,8 +29,20 @@ def start_of_day_iso(day: date | None = None) -> str:
     return dt_util.start_of_local_day(day).isoformat()
 
 
+def has_interval(task: Mapping[str, Any]) -> bool:
+    """Return whether a task repeats on a calendar interval."""
+    return bool(task.get(CONF_INTERVAL_VALUE))
+
+
+def has_runtime(task: Mapping[str, Any]) -> bool:
+    """Return whether a task has a runtime limit."""
+    return bool(task.get(CONF_RUNTIME_ENTITY) and task.get(CONF_RUNTIME_HOURS))
+
+
 def compute_next_due(task: Mapping[str, Any]) -> datetime | None:
-    """Return midnight of the day a task is next due, None if unknown."""
+    """Return midnight of the day a task is next due, None if unknown or none."""
+    if not has_interval(task):
+        return None
     last = dt_util.parse_datetime(task[CONF_LAST_PERFORMED])
     if last is None:
         return None
@@ -63,6 +82,8 @@ def async_mark_done(
     day: date | None = None,
 ) -> None:
     """Record that a task was done on a day, today by default."""
+    # Done again on the same day leaves the data unchanged: reset the runtime here
+    entry.runtime_data.runtime.async_set_used(task_id(subentry), 0)
     hass.config_entries.async_update_subentry(
         entry,
         subentry,

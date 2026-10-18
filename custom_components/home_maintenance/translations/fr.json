@@ -18,11 +18,14 @@
           "notify_targets": "Notifier",
           "notify_time": "Heure de notification",
           "notify_days_before": "Rappel (jours avant l'échéance)",
-          "notify_overdue": "Répéter chaque jour tant que la tâche est en retard"
+          "notify_overdue": "Répéter chaque jour tant que la tâche est en retard",
+          "notify_runtime_threshold": "Alerte d'utilisation (% restant)"
         },
         "data_description": {
           "notify_targets": "Destinataires des notifications par défaut (ex. vos téléphones). Chaque tâche peut le remplacer.",
-          "notify_days_before": "0 désactive le rappel. Une notification est toujours envoyée le jour de l'échéance."
+          "notify_days_before": "0 désactive le rappel. Une notification est toujours envoyée le jour de l'échéance.",
+          "notify_runtime_threshold": "Prévient une fois quand une tâche avec une limite d'utilisation n'a plus que ce pourcentage. 0 la désactive. Chaque tâche peut le remplacer.",
+          "notify_overdue": "Répète aussi la notification d'une tâche dont la limite d'utilisation est atteinte."
         }
       }
     }
@@ -45,20 +48,36 @@
             "tag_id": "Tag NFC"
           },
           "data_description": {
-            "interval_value": "Fréquence de la tâche, dans l'unité ci-dessous.",
+            "interval_value": "Fréquence de la tâche, dans l'unité ci-dessous. Laisser vide si la tâche n'a qu'une limite d'utilisation.",
             "tag_id": "Scanner ce tag marque la tâche comme faite.",
             "last_performed": "Laisser vide pour aujourd'hui."
           },
           "sections": {
+            "runtime": {
+              "name": "Limite d'utilisation",
+              "description": "Rend la tâche à faire après un nombre d'heures d'utilisation, comptées tant qu'une entité est allumée (dans tout état sauf off). Avec un intervalle en plus, la tâche est à faire à la première échéance atteinte.",
+              "data": {
+                "runtime_entity": "Compter tant qu'allumé",
+                "runtime_hours": "Durée de vie",
+                "runtime_used": "Heures utilisées"
+              },
+              "data_description": {
+                "runtime_entity": "Par exemple votre climatisation. Laisser vide pour aucune limite d'utilisation.",
+                "runtime_hours": "Heures d'utilisation avant que la tâche soit à faire.",
+                "runtime_used": "Si l'élément n'est pas neuf, les heures pendant lesquelles il a déjà servi."
+              }
+            },
             "notifications": {
               "name": "Notifications",
               "data": {
                 "notify_mode": "Notifier",
-                "notify_targets": "Cibles personnalisées"
+                "notify_targets": "Cibles personnalisées",
+                "notify_runtime_threshold": "Alerte d'utilisation (% restant)"
               },
               "data_description": {
                 "notify_mode": "Les cibles par défaut se règlent dans les options de l'intégration.",
-                "notify_targets": "Utilisées avec « Cibles personnalisées »."
+                "notify_targets": "Utilisées avec « Cibles personnalisées ».",
+                "notify_runtime_threshold": "Laisser vide pour la valeur par défaut de l'intégration. 0 la désactive."
               }
             }
           }
@@ -75,20 +94,36 @@
             "enabled": "Activée"
           },
           "data_description": {
-            "interval_value": "Fréquence de la tâche, dans l'unité ci-dessous.",
+            "interval_value": "Fréquence de la tâche, dans l'unité ci-dessous. Laisser vide si la tâche n'a qu'une limite d'utilisation.",
             "tag_id": "Scanner ce tag marque la tâche comme faite.",
             "enabled": "Une tâche désactivée n'est jamais à faire et n'envoie aucune notification."
           },
           "sections": {
+            "runtime": {
+              "name": "Limite d'utilisation",
+              "description": "Rend la tâche à faire après un nombre d'heures d'utilisation, comptées tant qu'une entité est allumée (dans tout état sauf off). Avec un intervalle en plus, la tâche est à faire à la première échéance atteinte.",
+              "data": {
+                "runtime_entity": "Compter tant qu'allumé",
+                "runtime_hours": "Durée de vie",
+                "runtime_used": "Heures utilisées"
+              },
+              "data_description": {
+                "runtime_entity": "Par exemple votre climatisation. Laisser vide pour aucune limite d'utilisation.",
+                "runtime_hours": "Heures d'utilisation avant que la tâche soit à faire.",
+                "runtime_used": "Heures comptées depuis la dernière réalisation. Modifiez-les pour corriger le compteur."
+              }
+            },
             "notifications": {
               "name": "Notifications",
               "data": {
                 "notify_mode": "Notifier",
-                "notify_targets": "Cibles personnalisées"
+                "notify_targets": "Cibles personnalisées",
+                "notify_runtime_threshold": "Alerte d'utilisation (% restant)"
               },
               "data_description": {
                 "notify_mode": "Les cibles par défaut se règlent dans les options de l'intégration.",
-                "notify_targets": "Utilisées avec « Cibles personnalisées »."
+                "notify_targets": "Utilisées avec « Cibles personnalisées ».",
+                "notify_runtime_threshold": "Laisser vide pour la valeur par défaut de l'intégration. 0 la désactive."
               }
             }
           }
@@ -96,7 +131,9 @@
       },
       "error": {
         "empty_title": "Saisissez un titre.",
-        "no_notify_targets": "Choisissez au moins une cible personnalisée."
+        "no_notify_targets": "Choisissez au moins une cible personnalisée.",
+        "no_limit": "Indiquez un intervalle, une limite d'utilisation ou les deux.",
+        "no_runtime_hours": "Indiquez la durée de vie en heures."
       },
       "abort": {
         "task_updated": "La tâche est modifiée."
@@ -115,6 +152,26 @@
       },
       "next_due": {
         "name": "Prochaine échéance"
+      },
+      "remaining": {
+        "name": "Restant",
+        "state_attributes": {
+          "hours_used": {
+            "name": "Heures utilisées"
+          },
+          "hours_limit": {
+            "name": "Durée de vie"
+          }
+        }
+      },
+      "hours_left": {
+        "name": "Heures restantes"
+      },
+      "lifespan": {
+        "name": "Durée de vie"
+      },
+      "interval": {
+        "name": "Intervalle"
       }
     }
   },
@@ -137,6 +194,12 @@
   "exceptions": {
     "not_a_task": {
       "message": "{entity_id} n'est pas une tâche Home Maintenance."
+    }
+  },
+  "issues": {
+    "missing_runtime_entity": {
+      "title": "Entité d'utilisation introuvable pour {task}",
+      "description": "La tâche **{task}** compte son utilisation tant que `{entity_id}` est allumée, mais cette entité n'existe plus. Elle a peut-être été renommée ou supprimée.\n\nModifiez la tâche pour choisir une autre entité. En attendant, son utilisation n'est pas comptée."
     }
   },
   "services": {

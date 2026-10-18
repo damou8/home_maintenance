@@ -18,11 +18,14 @@
           "notify_targets": "Notify",
           "notify_time": "Notification time",
           "notify_days_before": "Reminder (days before due date)",
-          "notify_overdue": "Repeat daily while overdue"
+          "notify_overdue": "Repeat daily while overdue",
+          "notify_runtime_threshold": "Runtime warning (% left)"
         },
         "data_description": {
           "notify_targets": "Default notification targets (e.g. your phones). A task can override this.",
-          "notify_days_before": "0 disables the reminder. A notification is always sent on the due date."
+          "notify_days_before": "0 disables the reminder. A notification is always sent on the due date.",
+          "notify_runtime_threshold": "Warns once when a task with a runtime limit has this much left. 0 disables it. A task can override this.",
+          "notify_overdue": "Also repeats the notification of a task whose runtime limit is reached."
         }
       }
     }
@@ -45,20 +48,36 @@
             "tag_id": "NFC tag"
           },
           "data_description": {
-            "interval_value": "How often the task repeats, in the unit below.",
+            "interval_value": "How often the task repeats, in the unit below. Leave blank if the task only has a runtime limit.",
             "tag_id": "Scanning this tag marks the task as done.",
             "last_performed": "Leave blank for today."
           },
           "sections": {
+            "runtime": {
+              "name": "Runtime limit",
+              "description": "Makes the task due after a number of hours of use, counted while an entity is on (in any state but off). With an interval too, the task is due at whichever comes first.",
+              "data": {
+                "runtime_entity": "Count while on",
+                "runtime_hours": "Lifespan",
+                "runtime_used": "Hours used"
+              },
+              "data_description": {
+                "runtime_entity": "For example your air conditioner. Leave blank for no runtime limit.",
+                "runtime_hours": "Hours of use before the task is due.",
+                "runtime_used": "If the item isn't new, the hours it has already been used."
+              }
+            },
             "notifications": {
               "name": "Notifications",
               "data": {
                 "notify_mode": "Notify",
-                "notify_targets": "Custom targets"
+                "notify_targets": "Custom targets",
+                "notify_runtime_threshold": "Runtime warning (% left)"
               },
               "data_description": {
                 "notify_mode": "Default targets are set in the integration's options.",
-                "notify_targets": "Used with Custom targets."
+                "notify_targets": "Used with Custom targets.",
+                "notify_runtime_threshold": "Leave blank for the integration's default. 0 disables it."
               }
             }
           }
@@ -75,20 +94,36 @@
             "enabled": "Enabled"
           },
           "data_description": {
-            "interval_value": "How often the task repeats, in the unit below.",
+            "interval_value": "How often the task repeats, in the unit below. Leave blank if the task only has a runtime limit.",
             "tag_id": "Scanning this tag marks the task as done.",
             "enabled": "A disabled task is never due and sends no notifications."
           },
           "sections": {
+            "runtime": {
+              "name": "Runtime limit",
+              "description": "Makes the task due after a number of hours of use, counted while an entity is on (in any state but off). With an interval too, the task is due at whichever comes first.",
+              "data": {
+                "runtime_entity": "Count while on",
+                "runtime_hours": "Lifespan",
+                "runtime_used": "Hours used"
+              },
+              "data_description": {
+                "runtime_entity": "For example your air conditioner. Leave blank for no runtime limit.",
+                "runtime_hours": "Hours of use before the task is due.",
+                "runtime_used": "Hours counted since the task was last done. Change them to correct the count."
+              }
+            },
             "notifications": {
               "name": "Notifications",
               "data": {
                 "notify_mode": "Notify",
-                "notify_targets": "Custom targets"
+                "notify_targets": "Custom targets",
+                "notify_runtime_threshold": "Runtime warning (% left)"
               },
               "data_description": {
                 "notify_mode": "Default targets are set in the integration's options.",
-                "notify_targets": "Used with Custom targets."
+                "notify_targets": "Used with Custom targets.",
+                "notify_runtime_threshold": "Leave blank for the integration's default. 0 disables it."
               }
             }
           }
@@ -96,7 +131,9 @@
       },
       "error": {
         "empty_title": "Enter a title.",
-        "no_notify_targets": "Choose at least one target for custom targets."
+        "no_notify_targets": "Choose at least one target for custom targets.",
+        "no_limit": "Set an interval, a runtime limit or both.",
+        "no_runtime_hours": "Enter the lifespan in hours."
       },
       "abort": {
         "task_updated": "The task is updated."
@@ -115,6 +152,26 @@
       },
       "next_due": {
         "name": "Next due"
+      },
+      "remaining": {
+        "name": "Remaining",
+        "state_attributes": {
+          "hours_used": {
+            "name": "Hours used"
+          },
+          "hours_limit": {
+            "name": "Lifespan"
+          }
+        }
+      },
+      "hours_left": {
+        "name": "Hours left"
+      },
+      "lifespan": {
+        "name": "Lifespan"
+      },
+      "interval": {
+        "name": "Interval"
       }
     }
   },
@@ -137,6 +194,12 @@
   "exceptions": {
     "not_a_task": {
       "message": "{entity_id} is not a Home Maintenance task."
+    }
+  },
+  "issues": {
+    "missing_runtime_entity": {
+      "title": "Runtime entity of {task} is missing",
+      "description": "The task **{task}** counts its runtime while `{entity_id}` is on, but that entity no longer exists. It may have been renamed or removed.\n\nChange the task to choose another entity. Until then, its runtime isn't counted."
     }
   },
   "services": {

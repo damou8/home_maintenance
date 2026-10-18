@@ -117,3 +117,18 @@ async def test_tag_scan_marks_done(hass: HomeAssistant, setup_integration) -> No
 
     assert entry.subentries[subentry_id].data["last_performed"].startswith(days_ago(0))
     assert hass.states.get("binary_sensor.descale_kettle").state == "off"
+
+
+async def test_interval_text_follows_ha_language(
+    hass: HomeAssistant, setup_integration
+) -> None:
+    """The Interval sensor reads in Home Assistant's language, singular or plural."""
+    entry = setup_integration
+    hass.config.language = "fr"
+    ent_reg = er.async_get(hass)
+    expected = {"Car": (1, "months", "1 mois"), "Sheets": (2, "weeks", "2 semaines")}
+    for title, (value, unit, text) in expected.items():
+        subentry_id = await add_task(hass, entry, title, value, interval_type=unit)
+        unique_id = f"{entry.subentries[subentry_id].unique_id}_interval"
+        entity_id = ent_reg.async_get_entity_id("sensor", DOMAIN, unique_id)
+        assert hass.states.get(entity_id).state == text

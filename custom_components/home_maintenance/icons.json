@@ -6,6 +6,18 @@
       },
       "next_due": {
         "default": "mdi:calendar-clock"
+      },
+      "remaining": {
+        "default": "mdi:timer-sand"
+      },
+      "hours_left": {
+        "default": "mdi:timer-outline"
+      },
+      "lifespan": {
+        "default": "mdi:timer-cog-outline"
+      },
+      "interval": {
+        "default": "mdi:calendar-refresh"
       }
     },
     "button": {

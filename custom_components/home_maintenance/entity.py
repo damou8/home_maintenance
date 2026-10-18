@@ -13,6 +13,8 @@ class HomeMaintenanceEntity(Entity):
     """An entity of a task: each task is a device holding its entities."""
 
     _attr_has_entity_name = True
+    # Whether the state depends on the hours counted for a runtime limit
+    _follows_runtime = False
 
     def __init__(self, entry: ConfigEntry, subentry: ConfigSubentry) -> None:
         """Initialize the entity."""
@@ -33,8 +35,22 @@ class HomeMaintenanceEntity(Entity):
         """Return the task's current subentry."""
         return self._entry.subentries[self._subentry_id]
 
+    async def async_added_to_hass(self) -> None:
+        """Follow the runtime counter, for entities that show it."""
+        await super().async_added_to_hass()
+        runtime = self._entry.runtime_data.runtime
+        if self._follows_runtime and runtime.has_task(self._task_id):
+            self.async_on_remove(
+                runtime.async_add_listener(self._task_id, self._async_runtime_updated)
+            )
+
     def _update_state(self) -> None:
         """Compute the state from the task's data, for entities that have one."""
+
+    @callback
+    def _async_runtime_updated(self) -> None:
+        self._update_state()
+        self.async_write_ha_state()
 
     @callback
     def async_task_updated(self) -> None:
