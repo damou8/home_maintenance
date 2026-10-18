@@ -91,6 +91,7 @@ async def test_add_task_defaults_to_today(
             "title": "Water plants",
             "interval_value": 3,
             "interval_type": "days",
+            "runtime": {},
             "notifications": {"notify_mode": "default"},
         },
     )
@@ -115,6 +116,7 @@ async def test_custom_notifications_need_targets(
             "title": "Car",
             "interval_value": 1,
             "interval_type": "months",
+            "runtime": {},
             "notifications": {"notify_mode": "custom"},
         },
     )
@@ -142,6 +144,7 @@ async def test_reconfigure_task(hass: HomeAssistant, setup_integration) -> None:
             "interval_type": "days",
             "last_performed": days_ago(10),
             "enabled": False,
+            "runtime": {},
             "notifications": {"notify_mode": "none"},
         },
     )

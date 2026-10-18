@@ -18,11 +18,13 @@
           "notify_targets": "Benachrichtigen",
           "notify_time": "Uhrzeit der Benachrichtigung",
           "notify_days_before": "Erinnerung (Tage vor Fälligkeit)",
-          "notify_overdue": "Täglich wiederholen, solange überfällig"
+          "notify_overdue": "Täglich wiederholen, solange überfällig",
+          "notify_runtime_threshold": "Laufzeitwarnung (% verbleibend)"
         },
         "data_description": {
           "notify_targets": "Standard-Benachrichtigungsziele (z. B. deine Handys). Eine Aufgabe kann dies überschreiben.",
-          "notify_days_before": "0 deaktiviert die Erinnerung. Am Fälligkeitstag wird immer benachrichtigt."
+          "notify_days_before": "0 deaktiviert die Erinnerung. Am Fälligkeitstag wird immer benachrichtigt.",
+          "notify_runtime_threshold": "Warnt einmal, wenn eine Aufgabe mit Laufzeitlimit nur noch so viel übrig hat. 0 deaktiviert sie. Eine Aufgabe kann dies überschreiben."
         }
       }
     }
@@ -45,20 +47,36 @@
             "tag_id": "NFC-Tag"
           },
           "data_description": {
-            "interval_value": "Wie oft die Aufgabe wiederkehrt, in der Einheit darunter.",
+            "interval_value": "Wie oft die Aufgabe wiederkehrt, in der Einheit darunter. Leer lassen, wenn die Aufgabe nur ein Laufzeitlimit hat.",
             "tag_id": "Das Scannen dieses Tags markiert die Aufgabe als erledigt.",
             "last_performed": "Leer lassen für heute."
           },
           "sections": {
+            "runtime": {
+              "name": "Laufzeitlimit",
+              "description": "Macht die Aufgabe nach einer Anzahl Betriebsstunden fällig, gezählt solange eine Entität eingeschaltet ist (in jedem Zustand außer off). Mit einem Intervall ist die Aufgabe fällig, sobald eines von beiden erreicht ist.",
+              "data": {
+                "runtime_entity": "Zählen, solange eingeschaltet",
+                "runtime_hours": "Lebensdauer",
+                "runtime_used": "Genutzte Stunden"
+              },
+              "data_description": {
+                "runtime_entity": "Zum Beispiel deine Klimaanlage. Leer lassen für kein Laufzeitlimit.",
+                "runtime_hours": "Betriebsstunden, bis die Aufgabe fällig ist.",
+                "runtime_used": "Wenn das Teil nicht neu ist, die Stunden, die es schon genutzt wurde."
+              }
+            },
             "notifications": {
               "name": "Benachrichtigungen",
               "data": {
                 "notify_mode": "Benachrichtigen",
-                "notify_targets": "Eigene Ziele"
+                "notify_targets": "Eigene Ziele",
+                "notify_runtime_threshold": "Laufzeitwarnung (% verbleibend)"
               },
               "data_description": {
                 "notify_mode": "Die Standardziele legst du in den Optionen der Integration fest.",
-                "notify_targets": "Wird mit „Eigene Ziele“ verwendet."
+                "notify_targets": "Wird mit „Eigene Ziele“ verwendet.",
+                "notify_runtime_threshold": "Leer lassen für den Standard der Integration. 0 deaktiviert sie."
               }
             }
           }
@@ -75,20 +93,36 @@
             "enabled": "Aktiviert"
           },
           "data_description": {
-            "interval_value": "Wie oft die Aufgabe wiederkehrt, in der Einheit darunter.",
+            "interval_value": "Wie oft die Aufgabe wiederkehrt, in der Einheit darunter. Leer lassen, wenn die Aufgabe nur ein Laufzeitlimit hat.",
             "tag_id": "Das Scannen dieses Tags markiert die Aufgabe als erledigt.",
             "enabled": "Eine deaktivierte Aufgabe ist nie fällig und sendet keine Benachrichtigungen."
           },
           "sections": {
+            "runtime": {
+              "name": "Laufzeitlimit",
+              "description": "Macht die Aufgabe nach einer Anzahl Betriebsstunden fällig, gezählt solange eine Entität eingeschaltet ist (in jedem Zustand außer off). Mit einem Intervall ist die Aufgabe fällig, sobald eines von beiden erreicht ist.",
+              "data": {
+                "runtime_entity": "Zählen, solange eingeschaltet",
+                "runtime_hours": "Lebensdauer",
+                "runtime_used": "Genutzte Stunden"
+              },
+              "data_description": {
+                "runtime_entity": "Zum Beispiel deine Klimaanlage. Leer lassen für kein Laufzeitlimit.",
+                "runtime_hours": "Betriebsstunden, bis die Aufgabe fällig ist.",
+                "runtime_used": "Seit der letzten Erledigung gezählte Stunden. Ändere sie, um den Zähler zu korrigieren."
+              }
+            },
             "notifications": {
               "name": "Benachrichtigungen",
               "data": {
                 "notify_mode": "Benachrichtigen",
-                "notify_targets": "Eigene Ziele"
+                "notify_targets": "Eigene Ziele",
+                "notify_runtime_threshold": "Laufzeitwarnung (% verbleibend)"
               },
               "data_description": {
                 "notify_mode": "Die Standardziele legst du in den Optionen der Integration fest.",
-                "notify_targets": "Wird mit „Eigene Ziele“ verwendet."
+                "notify_targets": "Wird mit „Eigene Ziele“ verwendet.",
+                "notify_runtime_threshold": "Leer lassen für den Standard der Integration. 0 deaktiviert sie."
               }
             }
           }
@@ -96,7 +130,9 @@
       },
       "error": {
         "empty_title": "Gib einen Titel ein.",
-        "no_notify_targets": "Wähle mindestens ein eigenes Ziel."
+        "no_notify_targets": "Wähle mindestens ein eigenes Ziel.",
+        "no_limit": "Gib ein Intervall, ein Laufzeitlimit oder beides an.",
+        "no_runtime_hours": "Gib die Lebensdauer in Stunden an."
       },
       "abort": {
         "task_updated": "Die Aufgabe wurde geändert."
@@ -115,6 +151,17 @@
       },
       "next_due": {
         "name": "Nächste Fälligkeit"
+      },
+      "remaining": {
+        "name": "Verbleibend",
+        "state_attributes": {
+          "hours_used": {
+            "name": "Genutzte Stunden"
+          },
+          "hours_limit": {
+            "name": "Lebensdauer"
+          }
+        }
       }
     }
   },

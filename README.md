@@ -11,6 +11,7 @@ This custom integration helps you remember important chores like changing air fi
 ## ✨ What It Does
 
 - 📋 Lets you create recurring tasks (e.g., “Change HVAC filter every 90 days”), right in the integration's settings
+- ⏱️ Tracks wear as well as time: a task can be due after hours of use (e.g., “Replace the AC filter after 300 hours of air conditioning”), or at whichever comes first
 - 🔔 Gives each task a sensor that turns on when it's due, for automations and dashboards
 - ✅ Lets you mark tasks as done with a button, a dashboard card, an action or an NFC tag
 - 📱 Notifies your phones when tasks are due
@@ -65,21 +66,33 @@ Tasks live on the integration's page: **Settings → Devices & services → Home
 
 - **Add task** asks for:
   - a title (e.g. “Clean dryer vent”)
-  - how often it repeats: a number and a unit (days, weeks or months)
+  - how often it repeats: a number and a unit (days, weeks or months). Leave it blank for a task with only a runtime limit.
+  - a runtime limit (optional, see [Runtime limits](#runtime-limits))
   - when you last did it (optional, today by default)
   - an icon and an NFC tag (optional: scanning the tag marks the task done)
   - who to notify (optional, see [Notifications](#-notifications))
 - A task's **⚙** button changes it. That's also where you **disable** a task: it then stays `off` and sends no notifications.
 - A task's **⋮** menu deletes it.
 
-Each task is a device (a "service" on the integration page) with four entities:
+Each task is a device (a "service" on the integration page) with these entities:
 
-- `binary_sensor.<task>`: `on` when the task is due. Its attributes give `last_performed`, `next_due`, `interval_value`, `interval_type` and `enabled`.
+- `binary_sensor.<task>`: `on` when the task is due. Its attributes give `last_performed`, `next_due`, `interval_value`, `interval_type` and `enabled`, plus `runtime_entity`, `runtime_limit`, `runtime_remaining` (%) and `runtime_left` (hours) for a task with a runtime limit.
 - `sensor.<task>_last_done`: the date the task was last done.
-- `sensor.<task>_next_due`: the date the task is next due.
+- `sensor.<task>_next_due`: the date the task is next due, for a task with an interval.
+- `sensor.<task>_remaining`: the percentage of the runtime limit left, for a task with one. Its attributes give `hours_used` and `hours_limit`.
 - `button.<task>_mark_done`: press it to mark the task done today.
 
 You can also mark tasks done from the [dashboard card](#-dashboard-card), the [`reset_last_performed` action](#-available-actions) or the task's NFC tag. The integration is available in English, French and German.
+
+### Runtime limits
+
+Some things wear with use rather than time: an air conditioner's filter, a dehumidifier's, a vacuum's brushes. Open a task's **Runtime limit** section and pick:
+
+- **Count while on**: the entity whose use wears the item, e.g. your air conditioner. Time counts while it's in any state but `off` (`unavailable` and `unknown` don't count either), so cooling, heating and fan modes all count.
+- **Lifespan**: the hours of use before the task is due.
+- **Hours used**: when adding a task for an item that isn't new, the hours it has already been used. When changing a task, the hours counted so far, which you can correct.
+
+The task is due when the hours run out. With an interval too, it's due at whichever comes first: “every year or after 300 hours”. Marking the task done resets the hours. They're saved across restarts, and time while Home Assistant is off isn't counted.
 
 ### ⬆️ Upgrading from 1.x
 
@@ -103,6 +116,11 @@ Home Maintenance can notify your phones when tasks are due, no automation needed
    - **Custom targets**: notify other entities for this task only
    - **No notifications**: never notify for this task
 
+Tasks with a [runtime limit](#runtime-limits) are also notified about their hours, as soon as it happens rather than at the notification time:
+
+- once, when the share of hours left drops below the **Runtime warning** (10% by default, `0` to turn it off). Set it in **Configure**, and override it in a task's **Notifications** section.
+- when the hours run out. The daily notification then repeats it until the task is done, instead of the date reminders.
+
 Messages are sent with `notify.send_message` in Home Assistant's language (English, French and German included).
 
 ---
@@ -115,14 +133,14 @@ The integration ships a dashboard card, no extra resource to install. Edit a das
 type: custom:home-maintenance-card
 ```
 
-It's the quickest way to see all your tasks at once. Each task shows its icon, name and next due date with the share of the interval left. The icon is **red** (and pulses) when the task is due, **blue** when less than 15% of the interval is left, **green** otherwise. Due tasks come first, then by due date. Tapping a task marks it done after a confirmation; holding it opens its details.
+It's the quickest way to see all your tasks at once. Each task shows its icon, name and next due date with the share of the interval left. A task with a runtime limit shows the share of its hours left instead (“62% left (186 h)”), next to its due date if it also has an interval. The icon is **red** (and pulses) when the task is due, **blue** when less than 15% of the interval or of the hours is left, **green** otherwise. Due tasks come first, then by due date. Tapping a task marks it done after a confirmation; holding it opens its details.
 
 | Option | Default | Description |
 |---|---|---|
 | `title` | | Title above the tasks |
 | `show_disabled` | `false` | Also show disabled tasks (greyed out, at the end) |
 | `labels` | | Only show tasks with at least one of these label IDs |
-| `warning_threshold` | `15` | Below this % of the interval left, the icon turns blue |
+| `warning_threshold` | `15` | Below this % of the interval or of the hours left, the icon turns blue |
 | `tap_action` | mark as done | Any [card action](https://www.home-assistant.io/dashboards/actions/); a `perform-action` without target applies to the tapped task |
 | `hold_action` | `more-info` | Same as `tap_action` |
 
@@ -135,6 +153,7 @@ It's the quickest way to see all your tasks at once. Each task shows its icon, n
 | Change HVAC Filter   | 90 days  | Jan 15, 2025  |
 | Test Smoke Alarms    | 6 months | Dec 1, 2024   |
 | Clean Gutters        | 8 weeks  | Oct 1, 2024   |
+| Replace AC Filter    | 1 year or 300 hours of air conditioning | May 2, 2025 |
 
 ---
 

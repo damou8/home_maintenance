@@ -1,6 +1,6 @@
 # Home Maintenance
 
-Home Assistant custom integration (domain `home_maintenance`), installed through HACS. It tracks recurring tasks. Each task is a config subentry, managed from the integration's page with HA's own forms. A task is shown as a device with a `binary_sensor` that turns `on` when the task is due, two date `sensor`s (last done, next due) and a "Mark done" `button`. The integration also has a dashboard card and sends daily notifications for due tasks.
+Home Assistant custom integration (domain `home_maintenance`), installed through HACS. It tracks recurring tasks. Each task is a config subentry, managed from the integration's page with HA's own forms. A task is due after a calendar interval, a runtime limit (hours while an entity is on), or whichever comes first. It's shown as a device with a `binary_sensor` that turns `on` when the task is due, date `sensor`s (last done, next due), a Remaining `sensor` for a runtime limit and a "Mark done" `button`. The integration also has a dashboard card and sends daily notifications for due tasks.
 
 Fork of TJPoorman/home_maintenance, maintained at github.com/damou8/home_maintenance. Minimum Home Assistant version: 2026.9 (`hacs.json`), the first release that uses `probatio` instead of `voluptuous`.
 
@@ -11,11 +11,12 @@ custom_components/home_maintenance/
   __init__.py        setup/unload, actions, NFC tag listener, update listener
   config_flow.py     setup, options (notification defaults), TaskSubentryFlow (add/change a task)
   tasks.py           task helpers: compute_next_due() (the only due-date calculation), async_mark_done()
+  runtime.py         RuntimeTracker: hours each runtime entity was on, saved in .storage/home_maintenance.runtime
   entity.py          base entity: one device per task
   binary_sensor.py   on when the task is due
-  sensor.py          last done and next due dates
+  sensor.py          last done and next due dates, runtime left
   button.py          Mark done
-  notifications.py   TaskNotifier: daily notify.send_message; messages in en/fr/de
+  notifications.py   TaskNotifier: daily notify.send_message, runtime warnings as they happen; messages in en/fr/de
   migration.py       1.x storage file -> subentries (config entry version 1 -> 2)
   card.py            serves the card and loads it on every page (frontend.add_extra_js_url)
   translations/      every UI string of the integration (en, fr, de)
@@ -27,7 +28,8 @@ tests/               pytest with pytest-homeassistant-custom-component
 
 ### How a task is stored and updated
 
-- A task is a `ConfigSubentry` of type `task`. Its title is the task title. Its `data` holds the interval, `last_performed` (local midnight, ISO), icon, tag, `enabled` and the notification override. Its `unique_id` is the task ID used in the entities' unique IDs.
+- A task is a `ConfigSubentry` of type `task`. Its title is the task title. Its `data` holds the interval (`interval_value` is `None` for a task with only a runtime limit), the runtime limit (`runtime_entity`, `runtime_hours`), `last_performed` (local midnight, ISO), icon, tag, `enabled` and the notification override. Its `unique_id` is the task ID used in the entities' unique IDs.
+- The hours used aren't in the subentry: they change every minute, and saving a subentry writes the config entries file and fires the update listener. `RuntimeTracker` keeps them in its own `Store`, saved on every on/off change, every 10 minutes while counting, when HA stops and when the entry unloads. `async_mark_done()` resets them, and the task forms can correct them. `docs/specs/runtime-tasks.md` has the full design.
 - Every change to a subentry or to the options fires the entry's update listener (`_async_entry_updated`). It compares a signature of the options and tasks, leaving out `last_performed`:
   - Anything else changed (task added, changed or deleted, options saved): the entry reloads.
   - Only `last_performed` changed (a task was marked done): the entities in `runtime_data.entities` update in place (`async_task_updated`), without a reload.
@@ -84,12 +86,15 @@ These have all bitten before:
 - **Scoped element registry.** HA's frontend swaps in a scoped custom-element registry at startup and forgets anything defined before. That's why the card waits for `home-assistant` to be defined before it defines itself. Guard every `customElements.define` with `customElements.get`, since the scripts can load twice.
 - **HA frontend internals change.** 1.x had a custom sidebar panel built on internal `ha-*` elements, and HA frontend updates broke it twice. That's why tasks now use HA's own forms. Keep the card on documented card APIs (`hass`, `setConfig`, `hass-action`, `ha-form` in the editor).
 - **probatio, not voluptuous.** Since 2026.9, Home Assistant validates with `probatio`. Import `probatio as vol`. HA's helpers, such as `add_suggested_values_to_schema`, only recognise probatio markers.
-- **Form sections are required keys.** The frontend always sends a section's dict. Tests that submit a form must include it (`notifications`).
+- **Form sections are required keys.** The frontend always sends a section's dict. Tests that submit a task form must include them (`runtime`, `notifications`).
 - **Deprecated registry lookups.** `device_registry.async_get_device` is deprecated. Use `async_get_device_by_identifier(identifier, entry_id)`.
 - **Dates and DST.** `next_due` keeps the UTC offset of `last_performed`. In the browser, build dates from the `YYYY-MM-DD` part; don't convert to local time, which shifts the day across DST changes.
 - **Config entry version.** 1.x entries stored the version as the string `"1.1.0"`, which HA can't compare with an integer. `async_setup` turns it into `1` before migration runs. The config flow is now at version 2, so tests use `MockConfigEntry(version=2)`.
 - **Time-dependent tests.** The test time zone is US/Pacific. Freeze the clock (`freezer`) when a test depends on the time of day.
 - **Service targets.** `reset_last_performed` takes `entity_id` as a list (`cv.entity_ids`) because dashboard actions send a target.
+- **`_attr_*` class attributes become properties.** HA's entity metaclass turns `_attr_translation_key` and friends into properties on the class, so `SomeEntity._attr_translation_key` returns a property object. Read such values from an instance, or keep them in a plain class attribute (`TaskSensor.key`).
+- **Float noise in percentages.** `100 * (1 - 70 / 100)` is `30.000000000000004`, which isn't `<= 30`. `RuntimeTracker.remaining()` rounds to 6 decimals before thresholds and `math.ceil` see it.
+- **Delayed saves postpone.** `Store.async_delay_save()` moves a pending write to the latest requested time, so calling it on every tick never writes. The tracker only asks for a save on changes and every 10 minutes.
 
 ## Working on the maintainer's Home Assistant
 

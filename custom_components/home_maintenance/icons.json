@@ -6,6 +6,9 @@
       },
       "next_due": {
         "default": "mdi:calendar-clock"
+      },
+      "remaining": {
+        "default": "mdi:timer-sand"
       }
     },
     "button": {

@@ -1,22 +1,24 @@
 """Send notifications for due Home Maintenance tasks."""
 
 import logging
+import math
 from collections.abc import Callable, Mapping
 from datetime import datetime
 from typing import Any
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.util import dt as dt_util
 
 from . import const
-from .tasks import compute_next_due, iter_tasks
+from .tasks import compute_next_due, iter_tasks, task_id
 
 _LOGGER = logging.getLogger(__name__)
 
-# Notification texts by language, {task} is the task title and {days} a number of days
+# Notification texts by language: {task} is the task title, {days} a number of
+# days, {pct} the percentage of runtime left and {hours} a number of hours
 MESSAGES = {
     "en": {
         "reminder_title": "⏳ Maintenance reminder",
@@ -26,6 +28,8 @@ MESSAGES = {
         "due_today": "The task '{task}' is due TODAY!",
         "overdue_one": "The task '{task}' is 1 day overdue!",
         "overdue_days": "The task '{task}' is {days} days overdue!",
+        "runtime_low": "The task '{task}' has {pct}% of its runtime left ({hours} h)!",
+        "runtime_over": "The task '{task}' reached its {hours} hours of runtime!",
     },
     "fr": {
         "reminder_title": "⏳ Rappel Maintenance",
@@ -35,6 +39,12 @@ MESSAGES = {
         "due_today": "La tâche '{task}' est à faire AUJOURD'HUI !",
         "overdue_one": "La tâche '{task}' est en retard de 1 jour !",
         "overdue_days": "La tâche '{task}' est en retard de {days} jours !",
+        "runtime_low": (
+            "La tâche '{task}' n'a plus que {pct} % d'utilisation ({hours} h) !"
+        ),
+        "runtime_over": (
+            "La tâche '{task}' a atteint ses {hours} heures d'utilisation !"
+        ),
     },
     "de": {
         "reminder_title": "⏳ Wartungserinnerung",
@@ -44,12 +54,21 @@ MESSAGES = {
         "due_today": "Die Aufgabe '{task}' ist HEUTE fällig!",
         "overdue_one": "Die Aufgabe '{task}' ist seit 1 Tag überfällig!",
         "overdue_days": "Die Aufgabe '{task}' ist seit {days} Tagen überfällig!",
+        "runtime_low": (
+            "Die Aufgabe '{task}' hat noch {pct} % ihrer Laufzeit ({hours} Std.)!"
+        ),
+        "runtime_over": (
+            "Die Aufgabe '{task}' hat ihre {hours} Betriebsstunden erreicht!"
+        ),
     },
 }
 
 
+# Date reminders go out in a daily check. Runtime warnings go out as soon as the
+# remaining runtime crosses the threshold or reaches 0, and the daily check
+# repeats the latter until the task is done.
 class TaskNotifier:
-    """Send a daily notification for tasks that are due soon, today or overdue."""
+    """Notify about tasks that are due soon, due or overdue."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize the notifier."""
@@ -87,10 +106,55 @@ class TaskNotifier:
             return task.get(const.CONF_NOTIFY_TARGETS) or []
         return self._options.get(const.CONF_NOTIFY_TARGETS) or []
 
+    def _texts(self) -> dict[str, str]:
+        """Return the notification texts in Home Assistant's language."""
+        language = (self.hass.config.language or "en").split("-")[0]
+        return MESSAGES.get(language, MESSAGES["en"])
+
+    def _runtime_threshold(self, task: Mapping[str, Any]) -> int:
+        """Return the remaining percentage that triggers a task's warning."""
+        threshold = task.get(const.CONF_NOTIFY_RUNTIME_THRESHOLD)
+        if threshold is None:
+            threshold = self._options.get(
+                const.CONF_NOTIFY_RUNTIME_THRESHOLD,
+                const.DEFAULT_NOTIFY_RUNTIME_THRESHOLD,
+            )
+        return int(threshold)
+
+    def _runtime_message(
+        self, subentry: ConfigSubentry, remaining: float
+    ) -> tuple[str, str]:
+        """Return (title, message) about a task's runtime."""
+        texts = self._texts()
+        limit = subentry.data[const.CONF_RUNTIME_HOURS]
+        if remaining <= 0:
+            return texts["due_title"], texts["runtime_over"].format(
+                task=subentry.title, hours=limit
+            )
+        return texts["reminder_title"], texts["runtime_low"].format(
+            task=subentry.title,
+            pct=math.ceil(remaining),
+            hours=math.ceil(limit * remaining / 100),
+        )
+
+    @callback
+    def async_runtime_changed(
+        self, subentry: ConfigSubentry, previous: float, remaining: float
+    ) -> None:
+        """Warn as soon as a task's runtime crosses its threshold, or runs out."""
+        threshold = self._runtime_threshold(subentry.data)
+        crossed_zero = previous > 0 >= remaining
+        crossed_threshold = threshold > 0 and previous > threshold >= remaining
+        if not (crossed_zero or crossed_threshold):
+            return
+        self.entry.async_create_task(
+            self.hass,
+            self._async_send(subentry, *self._runtime_message(subentry, remaining)),
+        )
+
     def _message_for(self, title: str, days_left: int) -> tuple[str, str] | None:
         """Return (title, message) for a task, or None if nothing is to be sent."""
-        language = (self.hass.config.language or "en").split("-")[0]
-        texts = MESSAGES.get(language, MESSAGES["en"])
+        texts = self._texts()
         days_before = int(
             self._options.get(
                 const.CONF_NOTIFY_DAYS_BEFORE, const.DEFAULT_NOTIFY_DAYS_BEFORE
@@ -116,28 +180,35 @@ class TaskNotifier:
     async def async_send_notifications(self) -> None:
         """Notify about every enabled task that is due soon, today or overdue."""
         today = dt_util.now().date()
+        runtime = self.entry.runtime_data.runtime
         for subentry in iter_tasks(self.entry):
-            task = subentry.data
-            if not task.get(const.CONF_ENABLED, True):
-                continue
-            targets = self._targets_for(task)
-            if not targets:
-                continue
-            due = compute_next_due(task)
-            if due is None:
-                continue
-            message = self._message_for(subentry.title, (due.date() - today).days)
-            if message is None:
-                continue
+            tid = task_id(subentry)
+            # Out of runtime: that's the task's one reminder, whatever its date
+            if runtime.has_task(tid) and runtime.remaining(tid) <= 0:
+                message = self._runtime_message(subentry, 0)
+            elif (due := compute_next_due(subentry.data)) is not None:
+                message = self._message_for(subentry.title, (due.date() - today).days)
+            else:
+                message = None
+            if message is not None:
+                await self._async_send(subentry, *message)
 
-            title, text = message
-            try:
-                await self.hass.services.async_call(
-                    "notify",
-                    "send_message",
-                    {"title": title, "message": text},
-                    target={"entity_id": targets},
-                    blocking=True,
-                )
-            except HomeAssistantError:
-                _LOGGER.exception("Failed to send notification for %s", subentry.title)
+    async def _async_send(
+        self, subentry: ConfigSubentry, title: str, text: str
+    ) -> None:
+        """Send a notification about a task, unless it's disabled or muted."""
+        task = subentry.data
+        if not task.get(const.CONF_ENABLED, True):
+            return
+        if not (targets := self._targets_for(task)):
+            return
+        try:
+            await self.hass.services.async_call(
+                "notify",
+                "send_message",
+                {"title": title, "message": text},
+                target={"entity_id": targets},
+                blocking=True,
+            )
+        except HomeAssistantError:
+            _LOGGER.exception("Failed to send notification for %s", subentry.title)

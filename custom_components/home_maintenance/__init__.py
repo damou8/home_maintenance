@@ -24,6 +24,7 @@ from .const import (
 from .entity import HomeMaintenanceEntity
 from .migration import async_migrate_v1
 from .notifications import TaskNotifier
+from .runtime import RuntimeTracker, async_remove_runtime_store
 from .tasks import async_mark_done, iter_tasks
 
 _LOGGER = logging.getLogger(__name__)
@@ -45,6 +46,7 @@ class HomeMaintenanceData:
     """Runtime data of the config entry."""
 
     notifier: TaskNotifier
+    runtime: RuntimeTracker
     # Options and tasks as they were at setup, to tell what changed since
     signature: object
     # Entities that show the task's data, updated in place when it's marked done
@@ -71,11 +73,14 @@ async def async_setup_entry(
 ) -> bool:
     """Set up Home Maintenance from a config entry."""
     notifier = TaskNotifier(hass, entry)
+    runtime = RuntimeTracker(hass, entry, notifier.async_runtime_changed)
+    await runtime.async_load()
     entry.runtime_data = HomeMaintenanceData(
-        notifier=notifier, signature=_signature(entry)
+        notifier=notifier, runtime=runtime, signature=_signature(entry)
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    runtime.async_start()
     await async_register_card(hass)
 
     @callback
@@ -104,8 +109,14 @@ async def async_unload_entry(
     """Unload a config entry."""
     if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         return False
+    await entry.runtime_data.runtime.async_unload()
     async_unregister_card(hass)
     return True
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:  # noqa: ARG001
+    """Delete the runtime counters when the integration is removed."""
+    await async_remove_runtime_store(hass)
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
