@@ -257,10 +257,10 @@ async def test_change_form_corrects_hours(
     assert remaining(hass) == 50
 
 
-async def test_removed_runtime_limit_removes_its_sensors(
+async def test_removed_limits_remove_their_sensors(
     hass: HomeAssistant, setup_integration
 ) -> None:
-    """The runtime sensors go with the runtime limit; Next due always stays."""
+    """A limit's sensors go with it; Next due always stays."""
     entry = setup_integration
     ent_reg = er.async_get(hass)
     runtime_sensors = [
@@ -275,8 +275,11 @@ async def test_removed_runtime_limit_removes_its_sensors(
         "runtime_remaining" not in hass.states.get("binary_sensor.ac_filter").attributes
     )
 
+    assert ent_reg.async_get("sensor.ac_filter_interval")
+
     await update_task(hass, entry, subentry_id, runtime_entity=AC, interval_value=None)
     assert all(ent_reg.async_get(entity_id) for entity_id in runtime_sensors)
+    assert ent_reg.async_get("sensor.ac_filter_interval") is None
     assert hass.states.get("sensor.ac_filter_next_due").state == "unknown"
 
 

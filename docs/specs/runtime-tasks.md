@@ -59,6 +59,7 @@ The lifespan is ignored when the entity is cleared, so clearing the entity remov
 | Mark done `button` | always | unchanged |
 | Last done `sensor` | always | unchanged |
 | Next due `sensor` | always | unchanged; unknown for a task without an interval |
+| **Interval `sensor`** (new) | the task has an interval | the interval as text in HA's language, such as `3 months` or `3 mois`. Home Assistant only takes translated units from English, so the unit is in the state rather than a unit of measurement. |
 | **Remaining `sensor`** (new) | the task has a runtime limit | `%` left, 1 decimal, shown without decimals. Attributes `hours_used` and `hours_limit`. |
 | **Hours left `sensor`** (new) | the task has a runtime limit | hours left (duration), 1 decimal, rounded up |
 | **Lifespan `sensor`** (new) | the task has a runtime limit | the runtime limit in hours (duration) |
@@ -70,7 +71,7 @@ The due binary sensor gets new attributes, which the card reads:
 - `runtime_remaining`: %, rounded up
 - `runtime_left`: hours, rounded up
 
-Both are rounded up so they only show 0 when the limit is reached. The runtime sensors are removed from the entity registry when the runtime limit is removed.
+Both are rounded up so they only show 0 when the limit is reached. A limit's sensors are removed from the entity registry when the limit is removed: Interval with the interval, the runtime sensors with the runtime limit.
 
 ## Notifications
 

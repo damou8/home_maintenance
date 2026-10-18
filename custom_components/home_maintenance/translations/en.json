@@ -168,6 +168,9 @@
       },
       "lifespan": {
         "name": "Lifespan"
+      },
+      "interval": {
+        "name": "Interval"
       }
     }
   },

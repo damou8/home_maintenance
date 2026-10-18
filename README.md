@@ -79,6 +79,7 @@ Each task is a device (a "service" on the integration page) with these entities:
 - `binary_sensor.<task>`: `on` when the task is due. Its attributes give `last_performed`, `next_due`, `interval_value`, `interval_type` and `enabled`, plus `runtime_entity`, `runtime_limit`, `runtime_remaining` (%) and `runtime_left` (hours) for a task with a runtime limit.
 - `sensor.<task>_last_done`: the date the task was last done.
 - `sensor.<task>_next_due`: the date the task is next due, unknown for a task without an interval.
+- `sensor.<task>_interval`: how often the task repeats, as text in Home Assistant's language (e.g. `3 months`), for a task with an interval.
 - For a task with a runtime limit:
   - `sensor.<task>_remaining`: the percentage of the hours left. Its attributes give `hours_used` and `hours_limit`.
   - `sensor.<task>_hours_left`: the hours left.

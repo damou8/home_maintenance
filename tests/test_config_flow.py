@@ -70,6 +70,7 @@ async def test_add_task(hass: HomeAssistant, setup_integration) -> None:
     assert last_done.state == days_ago(10)
     assert last_done.attributes["device_class"] == "date"
     assert hass.states.get("sensor.clean_filter_next_due").state == days_ago(3)
+    assert hass.states.get("sensor.clean_filter_interval").state == "7 days"
 
     device = dr.async_get(hass).async_get_device_by_identifier(
         (DOMAIN, subentry.unique_id), entry.entry_id
@@ -140,8 +141,8 @@ async def test_reconfigure_task(hass: HomeAssistant, setup_integration) -> None:
         result["flow_id"],
         {
             "title": "Clean air filter",
-            "interval_value": 30,
-            "interval_type": "days",
+            "interval_value": 3,
+            "interval_type": "months",
             "last_performed": days_ago(10),
             "enabled": False,
             "runtime": {},
@@ -160,5 +161,6 @@ async def test_reconfigure_task(hass: HomeAssistant, setup_integration) -> None:
     # Same entity, renamed with its device
     state = hass.states.get("binary_sensor.clean_filter")
     assert state.state == "off"
-    assert state.attributes["interval_value"] == 30
+    assert state.attributes["interval_value"] == 3
     assert state.attributes["friendly_name"] == "Clean air filter"
+    assert hass.states.get("sensor.clean_filter_interval").state == "3 months"

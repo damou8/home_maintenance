@@ -13,7 +13,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.util import dt as dt_util
 
 from . import const
-from .tasks import compute_next_due, iter_tasks, task_id
+from .tasks import compute_next_due, ha_language, iter_tasks, task_id
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -108,8 +108,7 @@ class TaskNotifier:
 
     def _texts(self) -> dict[str, str]:
         """Return the notification texts in Home Assistant's language."""
-        language = (self.hass.config.language or "en").split("-")[0]
-        return MESSAGES.get(language, MESSAGES["en"])
+        return MESSAGES.get(ha_language(self.hass), MESSAGES["en"])
 
     def _runtime_threshold(self, task: Mapping[str, Any]) -> int:
         """Return the remaining percentage that triggers a task's warning."""

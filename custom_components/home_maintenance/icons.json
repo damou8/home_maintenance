@@ -15,6 +15,9 @@
       },
       "lifespan": {
         "default": "mdi:timer-cog-outline"
+      },
+      "interval": {
+        "default": "mdi:calendar-refresh"
       }
     },
     "button": {

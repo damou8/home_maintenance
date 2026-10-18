@@ -19,6 +19,11 @@ from .const import (
 )
 
 
+def ha_language(hass: HomeAssistant) -> str:
+    """Return Home Assistant's language, without its region ("fr" for "fr-CA")."""
+    return (hass.config.language or "en").split("-")[0]
+
+
 def start_of_day_iso(day: date | None = None) -> str:
     """Return local midnight of a day (today by default) as an ISO string."""
     return dt_util.start_of_local_day(day).isoformat()

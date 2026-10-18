@@ -1,7 +1,8 @@
 """Sensors of a task: when it was last done, when it's due, how much runtime is left."""
 
 import math
-from typing import ClassVar
+from collections.abc import Callable, Mapping
+from typing import Any, ClassVar
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry, ConfigSubentry
@@ -11,9 +12,43 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_LAST_PERFORMED, CONF_RUNTIME_HOURS, DOMAIN
+from .const import (
+    CONF_INTERVAL_TYPE,
+    CONF_INTERVAL_VALUE,
+    CONF_LAST_PERFORMED,
+    CONF_RUNTIME_HOURS,
+    DOMAIN,
+)
 from .entity import HomeMaintenanceEntity
-from .tasks import compute_next_due, has_runtime, iter_tasks, task_id
+from .tasks import (
+    compute_next_due,
+    ha_language,
+    has_interval,
+    has_runtime,
+    iter_tasks,
+    task_id,
+)
+
+# How an interval reads, by language and unit: singular and plural, {n} the number.
+# A state rather than a translated unit: Home Assistant only takes units from the
+# English translations.
+INTERVAL_TEXTS = {
+    "en": {
+        "days": ("{n} day", "{n} days"),
+        "weeks": ("{n} week", "{n} weeks"),
+        "months": ("{n} month", "{n} months"),
+    },
+    "fr": {
+        "days": ("{n} jour", "{n} jours"),
+        "weeks": ("{n} semaine", "{n} semaines"),
+        "months": ("{n} mois", "{n} mois"),
+    },
+    "de": {
+        "days": ("{n} Tag", "{n} Tage"),
+        "weeks": ("{n} Woche", "{n} Wochen"),
+        "months": ("{n} Monat", "{n} Monate"),
+    },
+}
 
 
 async def async_setup_entry(
@@ -28,9 +63,9 @@ async def async_setup_entry(
             LastPerformedSensor(entry, subentry),
             NextDueSensor(entry, subentry),
         ]
-        # The runtime sensors only exist for a task with a runtime limit
-        for sensor_class in RUNTIME_SENSORS:
-            if has_runtime(subentry.data):
+        # The sensors of a limit only exist for a task with that limit
+        for sensor_class, applies in LIMIT_SENSORS:
+            if applies(subentry.data):
                 sensors.append(sensor_class(entry, subentry))
                 continue
             # Remove the one left over from before the limit was removed
@@ -82,6 +117,21 @@ class NextDueSensor(TaskSensor):
         self._attr_native_value = due.date() if due else None
 
 
+class IntervalSensor(TaskSensor):
+    """How often the task repeats, as text in Home Assistant's language."""
+
+    key = "interval"
+
+    @property
+    def native_value(self) -> str:
+        """Return the interval, such as "3 months"."""
+        # A property: the language needs hass, which isn't set at __init__
+        count = self._task_data[CONF_INTERVAL_VALUE]
+        texts = INTERVAL_TEXTS.get(ha_language(self.hass), INTERVAL_TEXTS["en"])
+        singular, plural = texts[self._task_data[CONF_INTERVAL_TYPE]]
+        return (singular if count == 1 else plural).format(n=count)
+
+
 class RemainingSensor(TaskSensor):
     """The share of the task's runtime limit that is left."""
 
@@ -131,8 +181,11 @@ class LifespanSensor(TaskSensor):
         self._attr_native_value = self._task_data[CONF_RUNTIME_HOURS]
 
 
-RUNTIME_SENSORS: tuple[type[TaskSensor], ...] = (
-    RemainingSensor,
-    HoursLeftSensor,
-    LifespanSensor,
+LIMIT_SENSORS: tuple[
+    tuple[type[TaskSensor], Callable[[Mapping[str, Any]], bool]], ...
+] = (
+    (IntervalSensor, has_interval),
+    (RemainingSensor, has_runtime),
+    (HoursLeftSensor, has_runtime),
+    (LifespanSensor, has_runtime),
 )

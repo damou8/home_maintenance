@@ -1,6 +1,6 @@
 # Home Maintenance
 
-Home Assistant custom integration (domain `home_maintenance`), installed through HACS. It tracks recurring tasks. Each task is a config subentry, managed from the integration's page with HA's own forms. A task is due after a calendar interval, a runtime limit (hours while an entity is on), or whichever comes first. It's shown as a device with a `binary_sensor` that turns `on` when the task is due, date `sensor`s (last done, next due), Remaining, Hours left and Lifespan `sensor`s for a runtime limit, and a "Mark done" `button`. The integration also has a dashboard card and sends daily notifications for due tasks.
+Home Assistant custom integration (domain `home_maintenance`), installed through HACS. It tracks recurring tasks. Each task is a config subentry, managed from the integration's page with HA's own forms. A task is due after a calendar interval, a runtime limit (hours while an entity is on), or whichever comes first. It's shown as a device with a `binary_sensor` that turns `on` when the task is due, date `sensor`s (last done, next due), an Interval `sensor` for a calendar interval, Remaining, Hours left and Lifespan `sensor`s for a runtime limit, and a "Mark done" `button`. The integration also has a dashboard card and sends daily notifications for due tasks.
 
 Fork of TJPoorman/home_maintenance, maintained at github.com/damou8/home_maintenance. Minimum Home Assistant version: 2026.9 (`hacs.json`), the first release that uses `probatio` instead of `voluptuous`.
 
@@ -14,7 +14,7 @@ custom_components/home_maintenance/
   runtime.py         RuntimeTracker: hours each runtime entity was on, saved in .storage/home_maintenance.runtime
   entity.py          base entity: one device per task
   binary_sensor.py   on when the task is due
-  sensor.py          last done and next due dates; runtime left (%, hours) and lifespan
+  sensor.py          last done and next due dates; interval; runtime left (%, hours) and lifespan
   button.py          Mark done
   notifications.py   TaskNotifier: daily notify.send_message, runtime warnings as they happen; messages in en/fr/de
   migration.py       1.x storage file -> subentries (config entry version 1 -> 2)
@@ -65,6 +65,7 @@ scripts/setup && scripts/develop
   - integration UI (forms, entities, actions, errors): `translations/*.json`
   - card: `frontend/src/strings.ts`
   - notifications: `MESSAGES` in `notifications.py`
+  - the Interval sensor's state: `INTERVAL_TEXTS` in `sensor.py`
 - **Match the surrounding code.** Python is linted with every ruff rule (`.ruff.toml`). Use HA helpers (`dt_util`, `cv`, selectors) rather than hand-rolled ones, and never block the event loop.
 - **Don't break other installs.** Never rename entity IDs, service fields or stored keys without a migration.
 
@@ -93,6 +94,7 @@ These have all bitten before:
 - **Time-dependent tests.** The test time zone is US/Pacific. Freeze the clock (`freezer`) when a test depends on the time of day.
 - **Service targets.** `reset_last_performed` takes `entity_id` as a list (`cv.entity_ids`) because dashboard actions send a target.
 - **`_attr_*` class attributes become properties.** HA's entity metaclass turns `_attr_translation_key` and friends into properties on the class, so `SomeEntity._attr_translation_key` returns a property object. Read such values from an instance, or keep them in a plain class attribute (`TaskSensor.key`).
+- **Translated units are English only.** Home Assistant reads `entity.sensor.<key>.unit_of_measurement` from the English translations whatever the language. That's why the Interval sensor's state is text ("3 mois") from `INTERVAL_TEXTS`, rather than a number with a translated unit.
 - **Float noise in percentages.** `100 * (1 - 70 / 100)` is `30.000000000000004`, which isn't `<= 30`. `RuntimeTracker.remaining()` rounds to 6 decimals before thresholds and `math.ceil` see it.
 - **Delayed saves postpone.** `Store.async_delay_save()` moves a pending write to the latest requested time, so calling it on every tick never writes. The tracker only asks for a save on changes and every 10 minutes.
 

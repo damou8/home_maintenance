@@ -168,6 +168,9 @@
       },
       "lifespan": {
         "name": "Lebensdauer"
+      },
+      "interval": {
+        "name": "Intervall"
       }
     }
   },
