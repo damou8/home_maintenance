@@ -30,7 +30,7 @@ async def test_mark_done_button(hass: HomeAssistant, setup_integration) -> None:
     """The button marks the task done today, without reloading the entry."""
     entry = setup_integration
     subentry_id = await add_task(hass, entry, "Clean filter", 7, 10)
-    sensor = entry.runtime_data.sensors[subentry_id]
+    entities = list(entry.runtime_data.entities)
 
     await hass.services.async_call(
         "button",
@@ -42,8 +42,10 @@ async def test_mark_done_button(hass: HomeAssistant, setup_integration) -> None:
 
     assert entry.subentries[subentry_id].data["last_performed"].startswith(days_ago(0))
     assert hass.states.get("binary_sensor.clean_filter").state == "off"
-    # Updated in place: same entity object
-    assert entry.runtime_data.sensors[subentry_id] is sensor
+    assert hass.states.get("sensor.clean_filter_last_done").state == days_ago(0)
+    assert hass.states.get("sensor.clean_filter_next_due").state == days_ago(-7)
+    # Updated in place: same entity objects
+    assert entry.runtime_data.entities == entities
 
 
 async def test_reset_action(hass: HomeAssistant, setup_integration) -> None:

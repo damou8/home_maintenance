@@ -2,7 +2,7 @@
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry, ConfigSubentry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
@@ -27,7 +27,7 @@ async def async_setup_entry(
     """Set up one binary sensor per task."""
     for subentry in iter_tasks(entry):
         sensor = HomeMaintenanceSensor(entry, subentry)
-        entry.runtime_data.sensors[subentry.subentry_id] = sensor
+        entry.runtime_data.entities.append(sensor)
         async_add_entities([sensor], config_subentry_id=subentry.subentry_id)
 
 
@@ -41,11 +41,10 @@ class HomeMaintenanceSensor(HomeMaintenanceEntity, BinarySensorEntity):
         """Initialize the sensor."""
         super().__init__(entry, subentry)
         self._attr_unique_id = self._task_id
-        self._update_state()
 
     def _update_state(self) -> None:
         """Compute the state from the task's data."""
-        task = self._task_data = self.subentry.data
+        task = self._task_data
         enabled = task.get(CONF_ENABLED, True)
         due = compute_next_due(task)
 
@@ -66,15 +65,6 @@ class HomeMaintenanceSensor(HomeMaintenanceEntity, BinarySensorEntity):
         }
         if task.get(CONF_TAG_ID):
             self._attr_extra_state_attributes["tag_id"] = task[CONF_TAG_ID]
-
-    @callback
-    def async_task_updated(self) -> None:
-        """Refresh the state if the task's data changed."""
-        # An unchanged subentry keeps its data object
-        if self.subentry.data is self._task_data:
-            return
-        self._update_state()
-        self.async_write_ha_state()
 
     async def async_update(self) -> None:
         """Recompute the state: a task becomes due as days pass."""

@@ -108,6 +108,14 @@
       "mark_done": {
         "name": "Als erledigt markieren"
       }
+    },
+    "sensor": {
+      "last_performed": {
+        "name": "Zuletzt erledigt"
+      },
+      "next_due": {
+        "name": "Nächste Fälligkeit"
+      }
     }
   },
   "selector": {

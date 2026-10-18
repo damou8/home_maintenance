@@ -72,9 +72,11 @@ Tasks live on the integration's page: **Settings → Devices & services → Home
 - A task's **⚙** button changes it. That's also where you **disable** a task: it then stays `off` and sends no notifications.
 - A task's **⋮** menu deletes it.
 
-Each task is a device with two entities:
+Each task is a device (a "service" on the integration page) with four entities:
 
 - `binary_sensor.<task>`: `on` when the task is due. Its attributes give `last_performed`, `next_due`, `interval_value`, `interval_type` and `enabled`.
+- `sensor.<task>_last_done`: the date the task was last done.
+- `sensor.<task>_next_due`: the date the task is next due.
 - `button.<task>_mark_done`: press it to mark the task done today.
 
 You can also mark tasks done from the [dashboard card](#-dashboard-card), the [`reset_last_performed` action](#-available-actions) or the task's NFC tag. The integration is available in English, French and German.

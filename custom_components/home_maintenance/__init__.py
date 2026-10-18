@@ -13,7 +13,6 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.typing import ConfigType
 
-from .binary_sensor import HomeMaintenanceSensor
 from .card import async_register_card, async_unregister_card
 from .const import (
     CONF_LAST_PERFORMED,
@@ -22,13 +21,14 @@ from .const import (
     SERVICE_RESET,
     SERVICE_SEND_NOTIFICATIONS,
 )
+from .entity import HomeMaintenanceEntity
 from .migration import async_migrate_v1
 from .notifications import TaskNotifier
 from .tasks import async_mark_done, iter_tasks
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = [Platform.BINARY_SENSOR, Platform.BUTTON]
+PLATFORMS = [Platform.BINARY_SENSOR, Platform.BUTTON, Platform.SENSOR]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 SERVICE_RESET_SCHEMA = vol.Schema(
@@ -47,7 +47,8 @@ class HomeMaintenanceData:
     notifier: TaskNotifier
     # Options and tasks as they were at setup, to tell what changed since
     signature: object
-    sensors: dict[str, HomeMaintenanceSensor] = field(default_factory=dict)
+    # Entities that show the task's data, updated in place when it's marked done
+    entities: list[HomeMaintenanceEntity] = field(default_factory=list)
 
 
 type HomeMaintenanceConfigEntry = ConfigEntry[HomeMaintenanceData]
@@ -136,8 +137,8 @@ async def _async_entry_updated(
         hass.config_entries.async_schedule_reload(entry.entry_id)
         return
     # Only tasks marked done: update them without reloading everything
-    for sensor in entry.runtime_data.sensors.values():
-        sensor.async_task_updated()
+    for entity in entry.runtime_data.entities:
+        entity.async_task_updated()
 
 
 def _task_for_entity(

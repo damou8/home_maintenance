@@ -108,6 +108,14 @@
       "mark_done": {
         "name": "Marquer comme fait"
       }
+    },
+    "sensor": {
+      "last_performed": {
+        "name": "Dernière réalisation"
+      },
+      "next_due": {
+        "name": "Prochaine échéance"
+      }
     }
   },
   "selector": {

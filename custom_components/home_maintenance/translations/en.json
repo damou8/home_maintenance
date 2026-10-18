@@ -108,6 +108,14 @@
       "mark_done": {
         "name": "Mark done"
       }
+    },
+    "sensor": {
+      "last_performed": {
+        "name": "Last done"
+      },
+      "next_due": {
+        "name": "Next due"
+      }
     }
   },
   "selector": {

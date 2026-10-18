@@ -66,6 +66,10 @@ async def test_add_task(hass: HomeAssistant, setup_integration) -> None:
     assert state.attributes["icon"] == "mdi:air-filter"
     assert state.attributes["friendly_name"] == "Clean filter"
     assert hass.states.get("button.clean_filter_mark_done")
+    last_done = hass.states.get("sensor.clean_filter_last_done")
+    assert last_done.state == days_ago(10)
+    assert last_done.attributes["device_class"] == "date"
+    assert hass.states.get("sensor.clean_filter_next_due").state == days_ago(3)
 
     device = dr.async_get(hass).async_get_device_by_identifier(
         (DOMAIN, subentry.unique_id), entry.entry_id

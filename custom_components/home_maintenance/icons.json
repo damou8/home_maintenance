@@ -1,5 +1,13 @@
 {
   "entity": {
+    "sensor": {
+      "last_performed": {
+        "default": "mdi:calendar-check"
+      },
+      "next_due": {
+        "default": "mdi:calendar-clock"
+      }
+    },
     "button": {
       "mark_done": {
         "default": "mdi:check-circle-outline"

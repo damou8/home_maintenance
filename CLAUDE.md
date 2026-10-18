@@ -1,6 +1,6 @@
 # Home Maintenance
 
-Home Assistant custom integration (domain `home_maintenance`), installed through HACS. It tracks recurring tasks. Each task is a config subentry, managed from the integration's page with HA's own forms. A task is shown as a device with a `binary_sensor` that turns `on` when the task is due and a "Mark done" `button`. The integration also has a dashboard card and sends daily notifications for due tasks.
+Home Assistant custom integration (domain `home_maintenance`), installed through HACS. It tracks recurring tasks. Each task is a config subentry, managed from the integration's page with HA's own forms. A task is shown as a device with a `binary_sensor` that turns `on` when the task is due, two date `sensor`s (last done, next due) and a "Mark done" `button`. The integration also has a dashboard card and sends daily notifications for due tasks.
 
 Fork of TJPoorman/home_maintenance, maintained at github.com/damou8/home_maintenance. Minimum Home Assistant version: 2026.9 (`hacs.json`), the first release that uses `probatio` instead of `voluptuous`.
 
@@ -13,6 +13,7 @@ custom_components/home_maintenance/
   tasks.py           task helpers: compute_next_due() (the only due-date calculation), async_mark_done()
   entity.py          base entity: one device per task
   binary_sensor.py   on when the task is due
+  sensor.py          last done and next due dates
   button.py          Mark done
   notifications.py   TaskNotifier: daily notify.send_message; messages in en/fr/de
   migration.py       1.x storage file -> subentries (config entry version 1 -> 2)
@@ -29,7 +30,7 @@ tests/               pytest with pytest-homeassistant-custom-component
 - A task is a `ConfigSubentry` of type `task`. Its title is the task title. Its `data` holds the interval, `last_performed` (local midnight, ISO), icon, tag, `enabled` and the notification override. Its `unique_id` is the task ID used in the entities' unique IDs.
 - Every change to a subentry or to the options fires the entry's update listener (`_async_entry_updated`). It compares a signature of the options and tasks, leaving out `last_performed`:
   - Anything else changed (task added, changed or deleted, options saved): the entry reloads.
-  - Only `last_performed` changed (a task was marked done): the sensors update in place, without a reload.
+  - Only `last_performed` changed (a task was marked done): the entities in `runtime_data.entities` update in place (`async_task_updated`), without a reload.
 
 ## Commands
 

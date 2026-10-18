@@ -128,3 +128,4 @@ async def test_migrate_from_v1(hass: HomeAssistant, hass_storage) -> None:
     assert state.attributes["icon"] == "mdi:air-filter"
     assert state.attributes["friendly_name"] == "Clean filter"
     assert hass.states.get("button.clean_filter_mark_done")
+    assert hass.states.get("sensor.clean_filter_next_due").state == days_ago(3)
