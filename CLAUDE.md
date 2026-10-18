@@ -92,8 +92,3 @@ These have all bitten before:
 - **Dates and DST.** `next_due` keeps the UTC offset of `last_performed`. The card builds dates from the `YYYY-MM-DD` part.
 - **Config entry version.** 1.x entries stored the version as the string `"1.1.0"`, which HA can't compare with an integer. `async_setup` turns it into `1` before migration runs.
 - **Daily check in tests.** The notifier runs every day at 09:00 (`DEFAULT_NOTIFY_TIME`) and sends its own messages. Tests that move the clock by hours start at 10:00 (the `morning` fixture in `tests/test_runtime.py`) and keep runtime limits short enough not to reach the next 09:00.
-
-## Working on the maintainer's Home Assistant
-
-- Integration updates go through HACS, never by copying files.
-- Ask before changing their dashboards, automations or options.
